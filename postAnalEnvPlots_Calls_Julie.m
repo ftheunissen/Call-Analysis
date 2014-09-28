@@ -23,7 +23,7 @@ end
 
 % Read the Bird info file
 fid = fopen('/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/Birds_List_Acoustic.txt', 'r');
-birdInfo = textscan(fid, '%s %s %s %s %s');
+birdInfo = textscan(fid, '%s %s %s %s %s %d');
 nInfo = length(birdInfo{1});
 fclose(fid);
 
@@ -157,7 +157,27 @@ for ig = 1:ngroups
     figure(2);
     plot(fvals, smPow./max(smPow), '-', 'Color', colorplot(ig, :), 'LineWidth', 2);
     hold on;
+    figure(10+ig);
+    plot(fvals, smPow./max(smPow), '-', 'Color', colorplot(ig, :), 'LineWidth', 2);
+    [pks, locs] = findpeaks(smPow./max(smPow), 'MINPEAKHEIGHT', 0.5, 'MINPEAKDISTANCE', 30);
+    title(nameGrp(ig));
+    xlabel('Frequency (Hz)');
+    ylabel('Power dB');
+    axis([250 10000 0.1 1.1]);
+    hold on;
+    npks = length(pks);
+    fprintf(1,'Call Type %s:', nameGrp{ig});
+    for ip=1:npks
+        plot([fvals(locs(ip)) fvals(locs(ip))], [0.1 1.1], 'k--');
+        if (fvals(locs(ip)) < 10000)
+            fprintf(1, '\t%4.2f', fvals(locs(ip))./1000);
+        end       
+    end
+    fprintf(1,'\n');
+    hold off;
+    
 end
+
 figure (1);
 legend(nameGrp, 'Location', 'EastOutside');
 xlabel('Frequency (Hz)');
