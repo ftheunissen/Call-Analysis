@@ -1,6 +1,7 @@
 % Load up the call data base
-% Read the data base produced by VocSectioningAmp.m 
-load /Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocCuts.mat
+% Read the data base produced by VocSectioningAmp.m
+% load /Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocCuts.mat
+load /auto/fdata/fet/julie/FullVocalizationBank/vocCuts.mat
 
 % set the order in which the call types should be displayed in confusion
 % matrices
@@ -12,6 +13,7 @@ soundlen = size(soundCutsTot, 2);     % Length of sound in points
 DBNOISE = 50;
 f_low = 250;
 f_high = 10000;
+plotme = 0;
 
 nf = length(fo);  % Number of frequency slices in our spectrogram
 nt = length(to);  % Number of time slices in our spectrogram
@@ -20,61 +22,66 @@ nt = length(to);  % Number of time slices in our spectrogram
 
 % Loop through all sounds to extract temporal and spectral parameters
 
-% Need to restart at 3029
 for is=1:nsounds
     
-     if (~strcmp(vocTypeCuts{is},'DC') )
-          continue;
-     end
+    %      if (~strcmp(vocTypeCuts{is},'DC') )
+    %           continue;
+    %      end
     
     fprintf(1,'Processing sound %d/%d\n', is, nsounds);
     soundIn  = soundCutsTot(is,:);
+    rms = std(soundIn(soundIn~=0));
     soundSpect = reshape(spectroCutsTot(is,:), nf, nt);   % This is the spectrogram calculated in VocSectioningAmp
-
     
-    % Plot the oscilogram + spectrogram
-    figure(1);
-    subplot(4,1,1);
+    % Plotting Variables
     t=1:soundlen;
     t = (t-1).*1000/samprate;
-    plot(t,soundIn);
-    xlabel('time (ms)');
-    s_axis = axis;
-    s_axis(1) = 0;
-    s_axis(2) = t(end);
-    axis(s_axis);
     
-    % Calculation the amplitude enveloppe
+    % Calculate amplitude enveloppe
     ampEnv = enveloppe_estimator(soundIn, samprate, 20, 1000);
     tk=0:fix(soundlen*1000/samprate);
-    hold on;
-    plot(tk, ampEnv, 'r');
-    hold off;
     
-    % Calculate and plot the spectrogram
-    subplot(4,1,[2 3 4]);
-    
-    maxB = max(max(soundSpect));
-    minB = maxB-DBNOISE;
-    imagesc(to*1000,fo,soundSpect);          % to is in seconds
-    axis xy;
-    caxis('manual');
-    caxis([minB maxB]);
-    cmap = spec_cmap();
-    colormap(cmap);
-    
-    %  Match the axis to oscillogram
-    v_axis = axis;
-    %v_axis(2)=4.0;
-    v_axis(1) = s_axis(1);
-    v_axis(2) = s_axis(2);
-    v_axis(3)=f_low;
-    v_axis(4)=f_high;
-    axis(v_axis);
-    xlabel('time (ms)'), ylabel('Frequency');
-    %axis off;
-    
-    
+    if plotme    % Plot the oscilogram + spectrogram
+        figure(1);
+        subplot(4,1,1);
+        
+        plot(t,soundIn);
+        xlabel('time (ms)');
+        s_axis = axis;
+        s_axis(1) = 0;
+        s_axis(2) = t(end);
+        axis(s_axis);
+        
+        
+        % Plot the amplitude enveloppe        
+        hold on;
+        plot(tk, ampEnv, 'r');
+        hold off;
+        
+        % Plot the spectrogram
+        subplot(4,1,[2 3 4]);
+        
+        maxB = max(max(soundSpect));
+        minB = maxB-DBNOISE;
+        imagesc(to*1000,fo,soundSpect);          % to is in seconds
+        axis xy;
+        caxis('manual');
+        caxis([minB maxB]);
+        cmap = spec_cmap();
+        colormap(cmap);
+        
+        %  Match the axis to oscillogram
+        v_axis = axis;
+        %v_axis(2)=4.0;
+        v_axis(1) = s_axis(1);
+        v_axis(2) = s_axis(2);
+        v_axis(3)=f_low;
+        v_axis(4)=f_high;
+        axis(v_axis);
+        xlabel('time (ms)'), ylabel('Frequency');
+        %axis off;
+    end
+       
     % Calculate the fundamental
     [fund, sal, fund2, lenfund] = fundEstimator(soundIn, samprate, soundSpect, to, fo);
     meanfund = mean(fund(~isnan(fund)));
@@ -86,44 +93,26 @@ for is=1:nsounds
     else
         fund2prop = sum(~isnan(fund2))/sum(~isnan(fund));
     end
-    
-    
+       
     % Plot the fundamental on the same figure
-    figure(1);
-    subplot(4,1,[2 3 4]);
-    hold on;
-    ph = plot(to.*1000.0, fund, 'k');
-    set(ph, 'LineWidth', 3);
-    ph = plot(to.*1000.0, fund2, 'g');
-    set(ph, 'LineWidth', 3);
-    hold off;
+    if plotme
+        figure(1);
+        subplot(4,1,[2 3 4]);
+        hold on;
+        ph = plot(to.*1000.0, fund, 'k');
+        set(ph, 'LineWidth', 3);
+        ph = plot(to.*1000.0, fund2, 'g');
+        set(ph, 'LineWidth', 3);
+        hold off;
+    end
     
     % Power spectrum
-    figure(2);
     window_len = 10.0;                 % Window length in ms
     nwindow = (1000.0.*length(soundIn)./samprate)./window_len;
     
     % Hs=spectrum.mtm(nwindow)
     Hs = spectrum.welch('Hann', 1024, 99);
     Hpsd = psd(Hs,soundIn,'Fs',samprate);
-    %hp = plot(Hpsd.Frequencies, 10*log10(Hpsd.Data));
-    hp = plot(Hpsd.Frequencies, Hpsd.Data);
- 
-% Calculation of spectral enveloppe - not the best way of doing it - better to fit data with Gaussian?    
-%     indFit = find(Hpsd.Frequencies < 8000);
-%     pCoeff = polyfit(Hpsd.Frequencies(indFit), Hpsd.Data(indFit), 2);
-%     powFit = polyval(pCoeff, Hpsd.Frequencies(indFit));
-%     hold on;
-%     plot(Hpsd.Frequencies(indFit), powFit, 'r', 'LineWidth', 2);
-    
-    xlabel('Frequency Hz');
-    %ylabel('Power dB');
-    ylabel('Power Linear');
-    power_axis = axis();
-    power_axis(1) = 0;
-    power_axis(2) = f_high;
-    axis(power_axis);
-    
     
     % Find quartile power
     cum_power = cumsum(Hpsd.data);
@@ -141,11 +130,33 @@ for is=1:nsounds
             end
         end
     end
-    hold on;
-    for iq=1:3
-        plot([Hpsd.Frequencies(quartile_freq(iq)) Hpsd.Frequencies(quartile_freq(iq))], [power_axis(3) power_axis(4)], 'k--');
+    
+    % Calculation of spectral enveloppe - not the best way of doing it - better to fit data with Gaussian?
+    %     indFit = find(Hpsd.Frequencies < 8000);
+    %     pCoeff = polyfit(Hpsd.Frequencies(indFit), Hpsd.Data(indFit), 2);
+    %     powFit = polyval(pCoeff, Hpsd.Frequencies(indFit));
+    %     hold on;
+    %     plot(Hpsd.Frequencies(indFit), powFit, 'r', 'LineWidth', 2);
+    
+    if plotme
+        figure(2);
+        
+        % Plot Power Spectrum
+        hp = plot(Hpsd.Frequencies, Hpsd.Data); 
+        xlabel('Frequency Hz');
+        ylabel('Power Linear');
+        
+        power_axis = axis();
+        power_axis(1) = 0;
+        power_axis(2) = f_high;
+        axis(power_axis);
+               
+        hold on;
+        for iq=1:3
+            plot([Hpsd.Frequencies(quartile_freq(iq)) Hpsd.Frequencies(quartile_freq(iq))], [power_axis(3) power_axis(4)], 'k--');
+        end
+        hold off;
     end
-    hold off;
     
     % Find skewness, kurtosis and entropy for power spectrum below
     % f_high
@@ -184,18 +195,21 @@ for is=1:nsounds
     
     
     % Print out results
-    figure(3);
-    clf(3);
-    text(0.4, 1.0, sprintf('\\bf %d/%d: %s  %s\\rm', is, nsounds, birdNameCuts{is}, vocTypeCuts{is}));
-    text(-0.1, 0.9, sprintf('Mean Fund = %.2f Hz Mean Saliency = %.2f Mean Fund2 = %.2f PF2 = %.2f%%', meanfund, meansal, meanfund2, fund2prop*100));
-    text(-0.1, 0.85, sprintf('Max Fund = %.2f Hz, Min Fund = %.2f Hz, CV = %.2f', max(fund), min(fund), std(fund(~isnan(fund)))/meanfund));
-    text(-0.1, 0.75, sprintf('Mean Spect = %.2f Hz, Std Spect= %.2f Hz', meanspect, stdspect));
-    text(-0.1, 0.7, sprintf('\tSkew = %.2f, Kurtosis = %.2f Entropy=%.2f', skewspect, kurtosisspect, entropyspect));
-    text(-0.1, 0.65, sprintf('Q1 F = %.2f Hz, Q2 F= %.2f Hz, Q3 F= %.2f Hz', Hpsd.Frequencies(quartile_freq(1)),Hpsd.Frequencies(quartile_freq(2)), Hpsd.Frequencies(quartile_freq(3)) ));
-    text(-0.1, 0.55, sprintf('Mean Time = %.2f ms, Std Time= %.2f ms', meantime, stdtime));
-    text(-0.1, 0.5, sprintf('\tSkew = %.2f, Kurtosis = %.2f Entropy=%.2f', skewtime, kurtosistime, entropytime));
-  
-    axis off;
+    if plotme
+        figure(3);
+        clf(3);
+        text(0.4, 1.0, sprintf('\\bf %d/%d: %s  %s\\rm', is, nsounds, birdNameCuts{is}, vocTypeCuts{is}));
+        text(-0.1, 0.9, sprintf('Mean Fund = %.2f Hz Mean Saliency = %.2f Mean Fund2 = %.2f PF2 = %.2f%%', meanfund, meansal, meanfund2, fund2prop*100));
+        text(-0.1, 0.85, sprintf('Max Fund = %.2f Hz, Min Fund = %.2f Hz, CV = %.2f', max(fund), min(fund), std(fund(~isnan(fund)))/meanfund));
+        text(-0.1, 0.75, sprintf('Mean Spect = %.2f Hz, Std Spect= %.2f Hz', meanspect, stdspect));
+        text(-0.1, 0.7, sprintf('\tSkew = %.2f, Kurtosis = %.2f Entropy=%.2f', skewspect, kurtosisspect, entropyspect));
+        text(-0.1, 0.65, sprintf('Q1 F = %.2f Hz, Q2 F= %.2f Hz, Q3 F= %.2f Hz', Hpsd.Frequencies(quartile_freq(1)),Hpsd.Frequencies(quartile_freq(2)), Hpsd.Frequencies(quartile_freq(3)) ));
+        text(-0.1, 0.55, sprintf('Mean Time = %.2f ms, Std Time= %.2f ms', meantime, stdtime));
+        text(-0.1, 0.5, sprintf('\tSkew = %.2f, Kurtosis = %.2f Entropy=%.2f', skewtime, kurtosistime, entropytime));
+        text(-0.1, 0.4, sprintf('\tRMS = %.2f, Max Amp = %.2f', rms, max(ampEnv)));
+        
+        axis off;
+    end
     
     callAnalData(is).bird = birdNameCuts{is};
     callAnalData(is).type = vocTypeCuts{is};
@@ -221,13 +235,17 @@ for is=1:nsounds
     callAnalData(is).entropytime = entropytime;
     callAnalData(is).psd = Hpsd;
     callAnalData(is).tAmp = ampEnv;
+    callAnalData(is).rms = rms;
+    callAnalData(is).maxAmp = max(ampEnv);
     
-    soundsc(soundIn, samprate);
-    pause();
-
+    if plotme
+        soundsc(soundIn, samprate);
+        pause();
+    end
     
 end
 
 input('Press Enter to save the data');
-cd('/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/');
+% cd('/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/');
+cd('/auto/fdata/fet/julie/FullVocalizationBank/');
 save vocCutsAnalwPSD_test.mat callAnalData
