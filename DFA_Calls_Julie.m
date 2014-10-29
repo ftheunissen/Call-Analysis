@@ -31,7 +31,7 @@ end
 
 % Read the Bird info file
 fid = fopen('/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/Birds_List_Acoustic.txt', 'r');
-birdInfo = textscan(fid, '%s %s %s %s %s');
+birdInfo = textscan(fid, '%s %s %s %s %s %f');
 nInfo = length(birdInfo{1});
 fclose(fid);
 
@@ -126,7 +126,7 @@ C = 12;                 % number of cepstral coefficients
 L = 22;                 % cepstral sine lifter parameter
 LF = 500;               % lower frequency limit (Hz)
 HF = 8000;              % upper frequency limit (Hz)
-dbplot = 1;             % Set to 1 for plots and pause
+dbplot = 0;             % Set to 1 for plots and pause
 dbres = 50;             % Resolution in dB for plots
 
 nsounds = size(soundCutsTot, 1);      % Number of calls in the library
@@ -198,7 +198,7 @@ if (dbplot)
     
 end
 
-for is = 7:nsounds
+for is = 1:nsounds
 
     % Calculate the Mel Frequency Cestral Coefficients or mfcc
     [ MFCCs, FBEs, FBEf, MAG, MAGf, frames ] = ...
@@ -329,7 +329,8 @@ clear spectroCutsTot;
 if normFlg
     save -v7.3 /auto/fdata/fet/julie/FullVocalizationBank/vocPCANorm.mat
 else
-    save -v7.3 /auto/fdata/fet/julie/FullVocalizationBank/vocPCA.mat
+    % save -v7.3 /auto/fdata/fet/julie/FullVocalizationBank/vocPCA.mat
+    save -V7.3 /Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocPCA.mat
 end
 
 
@@ -640,8 +641,8 @@ end
 %load /Users/frederictheunissen/Documents/Data/Julie/BanqueCrisNeuro/vocPCANorm.mat
 
 % load '/auto/fdata/fet/julie/Acoustical Analysis/vocTypeSpectro.mat'
-load '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/vocTypeSpectro.mat'
-inb = 4;       % Corresponds to 50 PCs in PCC_info_bird
+load '/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocTypeSpectro.mat'
+inb = 4;       % Corresponds to 40 PCs in PCC_info_bird
 nb = 40;
 
 name_grp_plot = {'Be', 'LT', 'Tu', 'Th', 'Di', 'Ag', 'Wh', 'Ne', 'Te', 'DC', 'So'};
@@ -837,7 +838,10 @@ title('Discriminant Function Analysis');
 
 %% Perform the logistic regression in a pairwise fashion
 % Here we used the space obtained in the DFA...
-
+% Read the formant file
+formantFile = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/VocFormants.xlsx';
+[numF, txtF] = xlsread(formantFile, 'Formants');
+maxnF = size(numF,2);    % Maximum number of Formants
 
 nScores = size(Score,1);
 
@@ -887,17 +891,35 @@ end
 figure(15);
 nf = length(fo);
 nt = length(to);
-for ig = 1:ngroups
+for igg = 1:ngroups
+    
+    ig = find(strcmp(name_grp_plot(igg), vocTypes));
+    fprintf(1, 'igg = %d ig = %d Name Group %s vocTypes %s\n', igg, ig, name_grp_plot{igg}, vocTypes{ig});
+    
+    indF = find(strcmp(txtF(:,1), vocTypes{ig}));
+        
     clear cmin cmax clims
     cmin = min(PC_LR(:,ig));
     cmax = max(PC_LR(:,ig));
     cabs = max(abs(cmin), abs(cmax));
     clims = [-cabs cabs];
-    subplot(ngroups, 1, ig);
+    subplot(1, ngroups, igg);
     imagesc(to,fo, reshape(PC_LR(:, ig), nf, nt), clims);
+    
     axis xy;
-    axis off;
+    axis([to(1) to(end) 0 10000]);
+    hold on;
+    % Add lines for formants
+    for ifm=1:maxnF
+        if (~isnan(numF(indF-1, ifm)) )
+            plot([to(end-50) to(end)], [numF(indF-1, ifm)*1000 numF(indF-1, ifm)*1000], 'k', 'LineWidth', 2);
+        end
+    end
+    if igg ~= 1
+        axis off;
+    end
     title(vocTypes{ig});
+    hold off;
 end
 
 nPerm = 200;
@@ -1149,10 +1171,10 @@ end
 PCC_MM.nvalid = n_validTot;
 
 fprintf(1,'\n');
-fprintf(1, 'Final Results MEL : DFA (%.2f-%.2f) RFP (%.2f-%.2f)\n', mean(PCC_MM.MEL_group_DFA_CI(:,1))*100, mean(PCC_MM.MEL_group_DFA_CI(:,2))*100,  mean(PCC_MM.MEL_Total_group_CI(:,1))*100, mean(PCC_MM.MEL_Total_RFP_CI(:,2))*100);
+fprintf(1, 'Final Results MEL : DFA (%.2f-%.2f) RFP (%.2f-%.2f)\n', mean(PCC_MM.MEL_group_DFA_CI(:,1))*100, mean(PCC_MM.MEL_group_DFA_CI(:,2))*100,  mean(PCC_MM.MEL_group_RFP_CI(:,1))*100, mean(PCC_MM.MEL_group_RFP_CI(:,2))*100);
 fprintf(1, '\t\t DFA Group Min %.2f RFP Group Min %.2f\n', min(PCC_MM.MEL_group_DFA)*100, min(PCC_MM.MEL_group_RFP)*100);
 fprintf(1, '\t\t DFA Group Max %.2f RFP Group Max %.2f\n', max(PCC_MM.MEL_group_DFA)*100, max(PCC_MM.MEL_group_RFP)*100);
-fprintf(1, 'Final Results MPS : DFA (%.2f-%.2f) RFP (%.2f-%.2f)\n', PCC_MM.MPS_group_DFA_CI(1)*100, PCC_MM.MPS_group_DFA_CI(2)*100,  PCC_MM.MPS_Total_RFP_CI(1)*100, PCC_MM.MPS_Total_RFP_CI(2)*100);
+fprintf(1, 'Final Results MPS : DFA (%.2f-%.2f) RFP (%.2f-%.2f)\n', mean(PCC_MM.MPS_group_DFA_CI(:,1))*100, mean(PCC_MM.MPS_group_DFA_CI(:,2))*100,  mean(PCC_MM.MPS_group_RFP_CI(:,1))*100, mean(PCC_MM.MPS_group_RFP_CI(:,2))*100);
 fprintf(1, '\t\t DFA Group Min %.2f RFP Group Min %.2f\n', min(PCC_MM.MPS_group_DFA)*100, min(PCC_MM.MPS_group_RFP)*100);
 fprintf(1, '\t\t DFA Group Max %.2f RFP Group Max %.2f\n', max(PCC_MM.MPS_group_DFA)*100, max(PCC_MM.MPS_group_RFP)*100);
 
@@ -1169,7 +1191,7 @@ end
 %% Display the MPS and MFCC results
 % First calculate the DFA with all the dataset and plot the DF
 
-figure(15);
+figure(16);
 % first re-organize the confusion matrix so the call types are in the right
 % order
 subplot(1,2,1);
@@ -1235,7 +1257,7 @@ set(gca(), 'YTickLabel', name_grp_plot);
 set(gca(), 'Xtick', 1:ngroups);
 set(gca(), 'XTickLabel', name_grp_plot);
 
-figure(16);
+figure(17);
 % first re-organize the confusion matrix so the call types are in the right
 % order
 subplot(1,2,1);
@@ -1304,78 +1326,52 @@ set(gca(), 'XTickLabel', name_grp_plot);
 %% Plot mean MPS for each call type
 
 [meanMPS, name_grp] = grpstats(soundCutsMPS, vocTypeCuts', {'mean', 'gname'});
+ngroups = length(name_grp);
+
+name_grp_plot = {'Be', 'LT', 'Tu', 'Th', 'Di', 'Ag', 'Wh', 'Ne', 'Te', 'DC', 'So'};
+colorVals = { [0 230 255], [0 95 255], [255 200 65], [255 150 40], [255 105 15],...
+    [255 0 0], [255 0 255], [255 100 255], [255 180 255], [140 100 185], [0 0 0]}; 
+
+if (length(name_grp_plot) ~= ngroups)
+    fprintf(1, 'Error: missmatch between the length of name_grp_plot and the number of groups\n');
+end
 
 dbres = 80;
 
 MPS_max = max(max(meanMPS));
 MPS_floor = MPS_max-dbres;
 
-figure(17)
-for rr = 1:ngroups
-    subplot(1,ngroups, rr);
+figure(18)
+for ig = 1:ngroups
+    rr = find(strcmp(name_grp_plot(ig), name_grp));
+    subplot(2,ngroups, ig);
     vocMPS = reshape(meanMPS(rr, :), nwfRes, nwt);
      
     imagesc(dwt, dwfRes.*1000, vocMPS, [MPS_floor MPS_max-5]);
     title(sprintf('%s', name_grp{rr}));
     axis xy;
-    if rr == 1
-    xlabel('Temporal Modulation (Hz)');
-    ylabel('Spectral Modulation (cyc/kHz)');
-    end
-end
-
-%%
-
-[nDF, p, statsDFA] = manova1(soundCutsMFCCs, vocTypeCuts);
-[mean_grp, std_grp, name_grp] = grpstats(statsDFA.canon(:,1:nDF),vocTypeCuts', {'mean', 'std', 'gname'});
-
-    
-%  Display the significant DFA
-figure(13);
-PC_DF = statsDFA.eigenvec(:, 1:nDF);
-
-% Find color scale
-clear cmin cmax clims
-cmin = min(min(PC_DF(:, 1:nDF)));
-cmax = max(max(PC_DF(:, 1:nDF)));
-cabs = max(abs(cmin), abs(cmax));
-clims = [-cabs cabs];
-for i=1:nDF
-    subplot(1,nDF,i);
-    PC_Spect = reshape(PC_DF(:,i), C, lenMFCCs);
-    imagesc(time_frames, [1 C], PC_Spect, clims)
-    title(sprintf('Cepstrum DFA %d', i));    
-    axis xy;
-    if i ~= 1
+    if ig == 1
+%         xlabel('Temporal Modulation (Hz)');
+%         ylabel('Spectral Modulation (cyc/kHz)');
+    else
         axis off;
-    end   
-    if (i == 1)
-        xlabel( 'Time (s)' );
-        ylabel( 'Cepstrum index' );
+    end
+    
+    subplot(2,ngroups, ngroups + ig);
+    vocMPS = reshape(meanMPS(rr, :), nwfRes, nwt);
+     
+    imagesc(dwt, dwfRes.*1000, vocMPS, [MPS_floor MPS_max-5]);
+    % title(sprintf('%s', name_grp{rr}));
+    axis xy;
+    axis([-10 10 0 1.0]);
+    if ig == 1
+        xlabel('Temporal Modulation (Hz)');
+        ylabel('Spectral Modulation (cyc/kHz)');
+    else
+        axis off;
     end
 end
-% Display confusion Matrix
-% First reorder the matrix
-tosortMatrix = PCC_info_bird.PCC_group;
-sortedMatrix = zeros(size(tosortMatrix));
-for rr = 1:size(tosortMatrix,1)
-    rInd = find(strcmp(name_grp_plot(rr), name_grp));
-    for cc = 1:size(tosortMatrix,2)
-        cInd = find(strcmp(name_grp_plot(cc), name_grp));
-        sortedMatrix(rr,cc) = tosortMatrix(rInd, cInd);
-    end
-end
-figure(14);
-imagesc(sortedMatrix);
-xlabel('Guess');
-ylabel('Actual');
-colormap(gray);
-colorbar;
-title(sprintf('Mel Cepstrum Confusion Matrix DFA %.1f%%(%.1f%%) Correct', PCC_info_bird.PCC_Total, PCC_info_bird.PCC_M));
-set(gca(), 'Ytick', 1:ngroups);
-set(gca(), 'YTickLabel', name_grp_plot);
-set(gca(), 'Xtick', 1:ngroups);
-set(gca(), 'XTickLabel', name_grp_plot);
+
 
 
 

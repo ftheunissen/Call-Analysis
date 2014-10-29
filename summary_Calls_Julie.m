@@ -4,29 +4,29 @@
 Ybar = zeros(4,2);   % Allocate space for summary data
 YbarError = zeros(4,2,2); % And for the confidence intervals
 
-load '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/vocTypeSpectro.mat';
+load '/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocTypeSpectro.mat';
 inb = 4;       % Corresponds to 40 PCs in PCC_info_bird
 nb = 40;
 
-Ybar(1,1) = 100*mean(PCC_info_bird.PCC_group_RFP(inb,:));
-YbarError(1,1,1) = 100.*mean(PCC_info_bird.PCC_group_RFP(inb,:)- squeeze(PCC_info_bird.PCC_group_RFP_CI(inb, :, 1)));
-YbarError(1,1,2) = 100.*mean(squeeze(PCC_info_bird.PCC_group_RFP_CI(inb, :, 2))-PCC_info_bird.PCC_group_RFP(inb,:));
+Ybar(2,1) = 100*mean(PCC_info_bird.PCC_group_RFP(inb,:));
+YbarError(2,1,1) = 100.*mean(PCC_info_bird.PCC_group_RFP(inb,:)- squeeze(PCC_info_bird.PCC_group_RFP_CI(inb, :, 1)));
+YbarError(2,1,2) = 100.*mean(squeeze(PCC_info_bird.PCC_group_RFP_CI(inb, :, 2))-PCC_info_bird.PCC_group_RFP(inb,:));
 
-Ybar(1,2) = 100*mean(PCC_info_bird.PCC_group_DFA(inb,:));
-YbarError(1,2,1) = 100.*mean(PCC_info_bird.PCC_group_DFA(inb,:)- squeeze(PCC_info_bird.PCC_group_DFA_CI(inb, :, 1)));
-YbarError(1,2,2) = 100.*mean(squeeze(PCC_info_bird.PCC_group_DFA_CI(inb, :, 2))-PCC_info_bird.PCC_group_DFA(inb,:));
+Ybar(2,2) = 100*mean(PCC_info_bird.PCC_group_DFA(inb,:));
+YbarError(2,2,1) = 100.*mean(PCC_info_bird.PCC_group_DFA(inb,:)- squeeze(PCC_info_bird.PCC_group_DFA_CI(inb, :, 1)));
+YbarError(2,2,2) = 100.*mean(squeeze(PCC_info_bird.PCC_group_DFA_CI(inb, :, 2))-PCC_info_bird.PCC_group_DFA(inb,:));
 
-load '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/vocTypeAcoust.mat';
+load '/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocTypeAcoust.mat';
 
-Ybar(2,1) = 100*mean(PCC_Acoust.group_RFP);
-YbarError(2,1,1) = 100.*mean(PCC_Acoust.group_RFP - PCC_Acoust.group_RFP_CI( :, 1)');
-YbarError(2,1,2) = 100.*mean(PCC_Acoust.group_RFP_CI( :, 2)' - PCC_Acoust.group_RFP);
+Ybar(1,1) = 100*mean(PCC_Acoust.group_RFP);
+YbarError(1,1,1) = 100.*mean(PCC_Acoust.group_RFP - PCC_Acoust.group_RFP_CI( :, 1)');
+YbarError(1,1,2) = 100.*mean(PCC_Acoust.group_RFP_CI( :, 2)' - PCC_Acoust.group_RFP);
 
-Ybar(2,2) = 100*mean(PCC_Acoust.group_RFP);
-YbarError(2,2,1) = 100.*mean(PCC_Acoust.group_DFA - PCC_Acoust.group_DFA_CI( :, 1)');
-YbarError(2,2,2) = 100.*mean(PCC_Acoust.group_DFA_CI( :, 2)' - PCC_Acoust.group_DFA);
+Ybar(1,2) = 100*mean(PCC_Acoust.group_RFP);
+YbarError(1,2,1) = 100.*mean(PCC_Acoust.group_DFA - PCC_Acoust.group_DFA_CI( :, 1)');
+YbarError(1,2,2) = 100.*mean(PCC_Acoust.group_DFA_CI( :, 2)' - PCC_Acoust.group_DFA);
 
-load '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/vocTypeMELMPS_PCA.mat';
+load '/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocTypeMELMPS_PCA.mat';
 
 Ybar(3,1) = 100*mean(PCC_MM.MPS_group_RFP);
 YbarError(3,1,1) = 100.*mean(PCC_MM.MPS_group_RFP - PCC_MM.MPS_group_RFP_CI( :, 1)');
@@ -49,7 +49,7 @@ figure(1);
 % order
 
 bh = bar(Ybar);
-set(get(bh(1),'Parent'),'XTickLabel',{'Spect', 'Env', 'MPS', 'MFCC'});
+set(get(bh(1),'Parent'),'XTickLabel',{'Env','Spect', 'MPS', 'MFCC'});
 set(bh(1), 'FaceColor', [0.4 0.4 0.4]);
 set(bh(2), 'FaceColor', [0.7 0.7 0.7]);
 
@@ -89,7 +89,7 @@ for ig=1:ngroups
     end
 end
 
-Y1 = 100*PCC_info_bird.PCC_group_DFA(inb,:);
+Y1 = 100*PCC_Acoust.group_DFA;
 [Y1sorted, sortind] = sort(Y1);
    
 hold on;
@@ -99,7 +99,7 @@ for ig=1:ngroups
     Y(ig,1) = Y1sorted(ig);
     bar( Y, 'FaceColor', colorVals(indPlot(sortind(ig)),:)./255);
     Y = zeros(ngroups,4);
-    Y(ig,2) = 100.0.*PCC_Acoust.group_DFA(sortind(ig));
+    Y(ig,2) = 100.0.*PCC_info_bird.PCC_group_DFA(inb, sortind(ig));
     bar(Y, 'FaceColor', colorVals(indPlot(sortind(ig)),:)./300);
     Y = zeros(ngroups,4);
     Y(ig,3) = 100.0.*PCC_MM.MPS_group_DFA(sortind(ig));
@@ -115,12 +115,12 @@ YbarError = zeros(2,ngroups);
 Ybar = PCC_info_bird.PCC_group_DFA(inb,:);
 YbarError(1,:) = 100.*(Ybar - squeeze(PCC_info_bird.PCC_group_DFA_CI(inb, :, 1)));
 YbarError(2,:) = 100.*(squeeze(PCC_info_bird.PCC_group_DFA_CI(inb, :, 2))- Ybar);
-errorbar(mean(get(get(bh(1), 'Children'), 'XData')) , 100.*Ybar(sortind),  YbarError(1,sortind), YbarError(2,sortind), '.k' );
+errorbar(mean(get(get(bh(2), 'Children'), 'XData')) , 100.*Ybar(sortind),  YbarError(1,sortind), YbarError(2,sortind), '.k' );
 
 Ybar = PCC_Acoust.group_DFA';
 YbarError(1,:) = 100.*(Ybar - PCC_Acoust.group_DFA_CI(:, 1));
 YbarError(2,:) = 100.*(PCC_Acoust.group_DFA_CI(:, 2) - Ybar);
-errorbar(mean(get(get(bh(2), 'Children'), 'XData')) , 100.*Ybar(sortind),  YbarError(1,sortind), YbarError(2,sortind), '.k' );
+errorbar(mean(get(get(bh(1), 'Children'), 'XData')) , 100.*Ybar(sortind),  YbarError(1,sortind), YbarError(2,sortind), '.k' );
 
 Ybar = PCC_MM.MPS_group_DFA';
 YbarError(1,:) = 100.*(Ybar - PCC_MM.MPS_group_DFA_CI(:, 1));
@@ -137,8 +137,8 @@ errorbar(mean(get(get(bh(4), 'Children'), 'XData')) , 100.*Ybar(sortind),  YbarE
 plot([0 ngroups+1], [100/ngroups 100/ngroups], 'k--');
 
 % Custom Legend
-text(0.5, 85, 'Spect', 'Color', [0 230 255]./255);
-text(0.5, 80, 'Env', 'Color', [0 230 255]./300);
+text(0.5, 85, 'Env', 'Color', [0 230 255]./255);
+text(0.5, 80, 'Spect', 'Color', [0 230 255]./300);
 text(0.5, 75, 'MPS', 'Color', [0 230 255]./400);
 text(0.5, 70, 'MFCC', 'Color', [0 230 255]./500);
 

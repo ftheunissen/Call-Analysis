@@ -2,9 +2,11 @@
 
 % Load the data.
 % load('/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocCutsAnal.mat');
-load('/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocCutsAnalwPSD_test.mat');
+% This one includes the PSD, the temporal enveloppe and has the correct
+% calibration for sound level
+load('/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocCutsAnalwPSD.mat');
 
-% the file with _test has the fix for the saliency - it is called _test
+% the file with _test has the fix for the saliency but does not include power and rms - it is called _test
 % just in case it had problem.
 
 % Clean up the data
@@ -24,7 +26,7 @@ end
 
 % Read the Bird info file
 fid = fopen('/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/Birds_List_Acoustic.txt', 'r');
-birdInfo = textscan(fid, '%s %s %s %s %s');
+birdInfo = textscan(fid, '%s %s %s %s %s %d');
 nInfo = length(birdInfo{1});
 fclose(fid);
 
@@ -133,7 +135,7 @@ name_grp = unique(vocTypeCuts, 'stable');  % This is the order returned by grpst
 ngroups = length(vocTypes);
 
 
-nAcoust = 20;
+nAcoust = 22;
 % Make a matrix of the Acoustical Parameters
 Acoust = zeros(length(vocTypeCuts), nAcoust);
 Acoust(:,1) = [callAnalData.fund];
@@ -156,6 +158,8 @@ Acoust(:,17) = [callAnalData.stdtime];
 Acoust(:,18) = [callAnalData.skewtime];
 Acoust(:,19) = [callAnalData.kurtosistime];
 Acoust(:,20) = [callAnalData.entropytime];
+Acoust(:,21) = [callAnalData.rms];
+Acoust(:,22) = [callAnalData.maxAmp];
 
 % Tags
 xtag{1} = 'fund';
@@ -178,6 +182,8 @@ xtag{17} = 'stdtime';
 xtag{18} = 'skewtime';
 xtag{19} = 'kurtosistime';
 xtag{20} = 'entropytime';
+xtag{21} = 'rms';
+xtag{22} = 'maxamp';
 
 % xtag for plotting
 xtagPlot{1} = 'F0';
@@ -200,7 +206,8 @@ xtagPlot{17} = 'Std T';
 xtagPlot{18} = 'Skew T';
 xtagPlot{19} = 'Kurt T';
 xtagPlot{20} = 'Ent T';
-
+xtagPlot{21} = 'RMS';
+xtagPlot{22} = 'Max A';
 
 %% Model for each Acoustical Parameter and Plotting
 
@@ -217,11 +224,14 @@ pCompare = zeros(nAcoust, 1);
 for ia=1:nAcoust
     figure(ia);
     
-    [acoustMean,acoustMeanCI] = grpstats(Acoust(:,ia),vocTypeCuts',{'mean','meanci'});
+    [acoustMean, acoustMeanCI, nameType] = grpstats(Acoust(:,ia),vocTypeCuts',{'mean','meanci', 'gname'});
     [acoustMeanSorted, indSorted] = sort(acoustMean);
-    
+
+    % Make a table of the data needed and average per bird.
     T = table(Acoust(:,ia), vocTypeCuts', birdNameCuts', 'VariableNames', { xtag{ia}, 'Type', 'Bird'});
-    modelV2 = fitlme(T, sprintf('%s ~ Type + (1|Bird)', xtag{ia}), 'DummyVarCoding', 'effects');
+    TBird = grpstats(T, {'Type', 'Bird'}, 'mean', 'DataVars', xtag{ia});
+    
+    modelV2 = fitlme(TBird, sprintf('mean_%s ~ Type + (1|Bird)', xtag{ia}), 'DummyVarCoding', 'effects');
     stats = anova(modelV2);
     
     % boxplot([callAnalData.stdspect],{callAnalData.type}, 'grouporder', nameGrp(indSorted), 'colorgroup', nameGrp(indSorted), 'colors', colorplot, 'boxstyle', 'filled', 'outliersize', 1, 'whisker', 100);
@@ -230,8 +240,10 @@ for ia=1:nAcoust
     % ylabel('Bandwidth (Hz)');
     R2AType(ia) = modelV2.Rsquared.Adjusted;
     pType(ia) = stats.pValue(2);
-    fprintf('\n\nLME for %s (no Sex) p=%.2g R2A=%.2f\n', xtag{ia}, stats.pValue(2), modelV2.Rsquared.Adjusted);
-    
+    fprintf('\nLME for %s (no Sex) p=%.2g R2A=%.2f Overall Mean %.3f\n', xtag{ia}, stats.pValue(2), modelV2.Rsquared.Adjusted, mean(acoustMean));
+    for i=1:length(acoustMean)
+        fprintf(1, '\t%s %.3f\n', nameType{indSorted(i)}, acoustMeanSorted(i));
+    end
     
     indSorted2 = zeros(1, ngroups*2-1);
     
@@ -250,8 +262,10 @@ for ia=1:nAcoust
     end
     
     T = table(Acoust(indSexNoSo, ia), vocTypeCuts(indSexNoSo)', birdNameCuts(indSexNoSo)', birdSexCuts(indSexNoSo)', 'VariableNames', { xtag{ia}, 'Type', 'Bird', 'Sex'});
-    modelV2Sex = fitlme(T, sprintf('%s ~ Type + Sex + Type:Sex + (1|Bird)', xtag{ia}), 'DummyVarCoding', 'effects');
-    modelV2NoSex = fitlme(T, sprintf('%s ~ Type + (1|Bird)', xtag{ia}), 'DummyVarCoding', 'effects');
+    TBird = grpstats(T, {'Type', 'Bird', 'Sex'}, 'mean', 'DataVars', xtag{ia});
+    
+    modelV2Sex = fitlme(TBird, sprintf('mean_%s ~ Type + Sex + Type:Sex + (1|Bird)', xtag{ia}), 'DummyVarCoding', 'effects');
+    modelV2NoSex = fitlme(TBird, sprintf('mean_%s ~ Type + (1|Bird)', xtag{ia}), 'DummyVarCoding', 'effects');
     stats = anova(modelV2Sex);
     
     boxplot(Acoust(indSex,ia),{vocTypeCuts(indSex) birdSexCuts(indSex)},  'grouporder', nameGrp2(indSorted2),...
@@ -286,7 +300,8 @@ for ia=1:nAcoust
         
         indTest = find((strcmp(birdSexCuts, 'M') | strcmp(birdSexCuts, 'F')) & (strcmp(vocTypeCuts, nameGrp{i})));
         T = table(Acoust(indTest,ia), birdNameCuts(indTest)', birdSexCuts(indTest)', 'VariableNames', {xtag{ia}, 'Bird', 'Sex'});
-        modelV2est = fitlme(T, sprintf('%s ~ Sex + (1|Bird)', xtag{ia}));
+        TBird = grpstats(T, {'Bird', 'Sex'}, 'mean', 'DataVars', xtag{ia});
+        modelV2est = fitlm(TBird, sprintf('mean_%s ~ Sex', xtag{ia}));
         stats = anova(modelV2est);
         
         birdID = unique(T.Bird);
@@ -301,7 +316,7 @@ for ia=1:nAcoust
         acoustMale = T{strcmp(T.Sex, 'M'),1};
         acoustFemale = T{strcmp(T.Sex, 'F'),1};
                
-        fprintf(1, 'Sex differences for %s pmixed = %.2g ptest = %.2g Female = %f Male = %f\n', nameGrp{i}, stats.pValue(2), p, nanmean(acoustFemale), nanmean(acoustMale));
+        fprintf(1, 'Sex differences for %s plm = %.2g ptest = %.2g Female = %f Male = %f\n', nameGrp{i}, stats.pValue(1), p, nanmean(acoustFemale), nanmean(acoustMale));
     end
     
 end
@@ -310,16 +325,16 @@ end
 figure(nAcoust+1);
 [R2ATypeSorted, indSorted] = sort(R2AType);
 bh = bar(R2ATypeSorted, 0.5, 'EdgeColor','k', 'FaceColor', [0.3 0.3 0.3], 'LineWidth', 1 );
-axis([0.5 20.5 0 1]);
+axis([0.5 nAcoust+0.5 0 1]);
 ph = get(bh, 'Parent');
-set(ph, 'XTick', 1:20);
+set(ph, 'XTick', 1:nAcoust);
 set(ph, 'XTickLabel', xtagPlot(indSorted));
 xlabel('Acoustical Feature');
 ylabel('Adjusted R2');
 hold on;
 for ia=1:nAcoust
     if pType(indSorted(ia)) < 0.05
-        text(ia-0.1, 0.8, '*');
+        text(ia-0.1, 0.9, '*');
     end
 end
 hold off;
@@ -328,9 +343,9 @@ figure(nAcoust+2);
 R2ADiff = R2ATypeSex - R2ATypeS;
 [R2ADiffSorted, indDiffSorted] = sort(R2ADiff);
 bh = bar(R2ADiffSorted, 0.5, 'EdgeColor','k', 'FaceColor', [0.3 0.3 0.3], 'LineWidth', 1 );
-axis([0.5 20.5 0 0.1]);
+axis([0.5 nAcoust+0.5 0 0.2]);
 ph = get(bh, 'Parent');
-set(ph, 'XTick', 1:20);
+set(ph, 'XTick', 1:nAcoust);
 set(ph, 'XTickLabel', xtagPlot(indDiffSorted));
 xlabel('Acoustical Feature');
 ylabel('Adjusted R2 Difference Sex');
@@ -338,7 +353,7 @@ ylabel('Adjusted R2 Difference Sex');
 hold on;
 for ia=1:nAcoust
     if pCompare(indDiffSorted(ia)) < 0.05
-        text(ia-0.1, 0.06, '*');
+        text(ia-0.1, 0.18, '*');
     end
 end
 hold off;
@@ -475,10 +490,10 @@ for i = 1:ngroups
 end
 PCC_Acoust.nvalid = n_validTot;
 
-save('/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/vocTypeAcoust.mat', 'PCC_Acoust');
+save('/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocTypeAcoust.mat', 'PCC_Acoust');
 
 %% Print out the confusion Matrix
-load '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/vocTypeAcoust.mat';
+load '/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocTypeAcoust.mat';
 figure();
 % first re-organize the confusion matrix so the call types are in the right
 % order
@@ -612,19 +627,25 @@ fprintf(1, 'Number of significant dimensions d = %d\n', d_ind);
 for id = 1:d_ind
     zscore_eigenvectord = stats.eigenvec(:,id);
     [sorted_eigenvectord, sort_index] = sort(abs(zscore_eigenvectord), 1,'descend');
-    fprintf(1, '%d\t%.3f\t%.1f\t%.1f\t%.3f(%s) + %.3f(%s) + %.3f(%s) + %.3f(%s)\n', id, p_ind(id), stats.eigenval(id)*100/sum(stats.eigenval), sum(stats.eigenval(1:id))*100/sum(stats.eigenval),...
+    fprintf(1, '%d\t%.3f\t%.1f\t%.1f\t%.3f(%s) + %.3f(%s) + %.3f(%s) + %.3f(%s)\n\t\t\t\t\t+%.3f(%s) + %.3f(%s) + %.3f(%s) + %.3f(%s)\n', id, p_ind(id), stats.eigenval(id)*100/sum(stats.eigenval), sum(stats.eigenval(1:id))*100/sum(stats.eigenval),...
         zscore_eigenvectord(sort_index(1)), xtagPlot{sort_index(1)}, ...
         zscore_eigenvectord(sort_index(2)), xtagPlot{sort_index(2)}, ...
         zscore_eigenvectord(sort_index(3)), xtagPlot{sort_index(3)}, ...
-        zscore_eigenvectord(sort_index(4)), xtagPlot{sort_index(4)}) ;
+        zscore_eigenvectord(sort_index(4)), xtagPlot{sort_index(4)}, ...
+        zscore_eigenvectord(sort_index(5)), xtagPlot{sort_index(5)}, ...
+        zscore_eigenvectord(sort_index(6)), xtagPlot{sort_index(6)}, ...
+        zscore_eigenvectord(sort_index(7)), xtagPlot{sort_index(7)}, ...
+        zscore_eigenvectord(sort_index(8)), xtagPlot{sort_index(8)}) ;
     
 end
 
 
 % Another option for the DFA figure to match the Spectro Features
 name_grp_plot = {'Be', 'LT', 'Tu', 'Th', 'Di', 'Ag', 'Wh', 'Ne', 'Te', 'DC', 'So'};
-colorVals = [ [0 230 255]; [0 95 255]; [255 200 65]; [255 150 40]; [255 105 15];...
-    [255 0 0]; [255 180 255]; [255 100 255]; [140 100 185]; [100 50 200]; [100 100 100] ];
+
+colorVals = { [0 230 255], [0 95 255], [255 200 65], [255 150 40], [255 105 15],...
+    [255 0 0], [255 0 255], [255 100 255], [255 180 255], [140 100 185], [0 0 0]}; 
+
 if (length(name_grp_plot) ~= ngroups)
     fprintf(1, 'Error: missmatch between the length of name_grp_plot and the number of groups\n');
 end
@@ -635,7 +656,7 @@ nDF = 5;
 
 for iDF=2:nDF
     %subplot(2,ceil((nDF-1)/2), iDF-1);
-    subplot(1, nDF -1, iDF-1);
+    subplot(1, nDF, iDF-1);
     for ig=1:ngroups
         for ig_ind=1:ngroups
             if strcmp(name_grp_plot{ig}, name_grp{ig_ind})

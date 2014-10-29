@@ -1,7 +1,7 @@
 % Load up the call data base
 % Read the data base produced by VocSectioningAmp.m
-% load /Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocCuts.mat
-load /auto/fdata/fet/julie/FullVocalizationBank/vocCuts.mat
+load /Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocCuts.mat
+%load /auto/fdata/fet/julie/FullVocalizationBank/vocCuts.mat
 
 % set the order in which the call types should be displayed in confusion
 % matrices
@@ -13,7 +13,7 @@ soundlen = size(soundCutsTot, 2);     % Length of sound in points
 DBNOISE = 50;
 f_low = 250;
 f_high = 10000;
-plotme = 0;
+plotme = 1;
 
 nf = length(fo);  % Number of frequency slices in our spectrogram
 nt = length(to);  % Number of time slices in our spectrogram
@@ -24,10 +24,10 @@ nt = length(to);  % Number of time slices in our spectrogram
 
 for is=1:nsounds
     
-    %      if (~strcmp(vocTypeCuts{is},'DC') )
-    %           continue;
-    %      end
-    
+%          if (~strcmp(vocTypeCuts{is},'DC') )   % Distance call is==7 is used as an example
+%               continue;
+%          end
+%     
     fprintf(1,'Processing sound %d/%d\n', is, nsounds);
     soundIn  = soundCutsTot(is,:);
     rms = std(soundIn(soundIn~=0));
