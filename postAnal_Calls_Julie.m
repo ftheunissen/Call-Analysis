@@ -231,7 +231,7 @@ for ia=1:nAcoust
     T = table(Acoust(:,ia), vocTypeCuts', birdNameCuts', 'VariableNames', { xtag{ia}, 'Type', 'Bird'});
     TBird = grpstats(T, {'Type', 'Bird'}, 'mean', 'DataVars', xtag{ia});
     
-    modelV2 = fitlme(TBird, sprintf('mean_%s ~ Type + (1|Bird)', xtag{ia}), 'DummyVarCoding', 'effects');
+    modelV2 = fitlme(TBird, sprintf('mean_%s ~  Type + (1|Bird)', xtag{ia}), 'DummyVarCoding', 'effects');
     stats = anova(modelV2);
     
     % boxplot([callAnalData.stdspect],{callAnalData.type}, 'grouporder', nameGrp(indSorted), 'colorgroup', nameGrp(indSorted), 'colors', colorplot, 'boxstyle', 'filled', 'outliersize', 1, 'whisker', 100);
@@ -240,9 +240,21 @@ for ia=1:nAcoust
     % ylabel('Bandwidth (Hz)');
     R2AType(ia) = modelV2.Rsquared.Adjusted;
     pType(ia) = stats.pValue(2);
+    
+    modelV2Full = fitlme(TBird, sprintf('mean_%s ~  -1 + Type + (1|Bird)', xtag{ia}), 'DummyVarCoding', 'full');
+    CI = coefCI(modelV2Full);
+        % Calculate p-values for different from mean
+    nTypes = length(acoustMean);
+    pValMean = zeros(nTypes, 1);
+    for i=1:nTypes
+        H = zeros(1, nTypes);
+        H(i) = 1;
+        pValMean(i) = coefTest(modelV2Full,H, mean(acoustMean));
+    end
+       
     fprintf('\nLME for %s (no Sex) p=%.2g R2A=%.2f Overall Mean %.3f\n', xtag{ia}, stats.pValue(2), modelV2.Rsquared.Adjusted, mean(acoustMean));
-    for i=1:length(acoustMean)
-        fprintf(1, '\t%s %.3f\n', nameType{indSorted(i)}, acoustMeanSorted(i));
+    for i=1:nTypes
+        fprintf(1, '\t%s %.3f (%.3f-%.3f) %.4f\n', nameType{indSorted(i)}, acoustMeanSorted(i), CI(indSorted(i),1), CI(indSorted(i),2), pValMean(indSorted(i)));
     end
     
     indSorted2 = zeros(1, ngroups*2-1);

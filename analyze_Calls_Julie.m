@@ -131,6 +131,27 @@ for is=1:nsounds
         end
     end
     
+    % Apply LPC to extract formants
+    A = lpc(soundIn, 8);    % 8 degree polynomial
+    rts = roots(A);          % Find the roots of A
+    rts = rts(imag(rts)>=0);  % Keep only half of them
+    angz = atan2(imag(rts),real(rts));
+    
+    % Calculate the frequencies and the bandwidth of the formants
+    [frqs,indices] = sort(angz.*(samprate/(2*pi)));
+    bw = -1/2*(samprate/(2*pi))*log(abs(rts(indices)));
+    
+    % Keep formansts above 1000 Hz and with bandwidth < 1000
+    nn = 0;
+    formants = [];
+    for kk = 1:length(frqs)
+        if (frqs(kk) > 1000 && bw(kk) <1000)        
+            nn = nn+1;
+            formants(nn) = frqs(kk);
+        end
+    end
+    
+    
     % Calculation of spectral enveloppe - not the best way of doing it - better to fit data with Gaussian?
     %     indFit = find(Hpsd.Frequencies < 8000);
     %     pCoeff = polyfit(Hpsd.Frequencies(indFit), Hpsd.Data(indFit), 2);
@@ -155,6 +176,19 @@ for is=1:nsounds
         for iq=1:3
             plot([Hpsd.Frequencies(quartile_freq(iq)) Hpsd.Frequencies(quartile_freq(iq))], [power_axis(3) power_axis(4)], 'k--');
         end
+        for in=1:nn
+            plot([formants(in) formants(in)], [power_axis(3) power_axis(4)], 'r--');
+        end   
+        
+        hold off;
+        
+        figure(1);
+        subplot(4,1,[2 3 4]);
+        spectro_axis = axis();
+        hold on;
+        for in=1:nn
+            plot([spectro_axis(1) spectro_axis(2)], [formants(in) formants(in)], 'r--');
+        end 
         hold off;
     end
     
@@ -238,6 +272,22 @@ for is=1:nsounds
     callAnalData(is).rms = rms;
     callAnalData(is).maxAmp = max(ampEnv);
     
+    if (nn > 0 )
+        callAnalData(is).f1 = formants(1);
+    else
+        callAnalData(is).f1 = nan;
+    end
+    if (nn > 1 )
+        callAnalData(is).f2 = formants(2);
+    else
+        callAnalData(is).f2 = nan;
+    end
+    if (nn > 2 )
+        callAnalData(is).f3 = formants(3);
+    else
+        callAnalData(is).f3 = nan;
+    end
+    
     if plotme
         soundsc(soundIn, samprate);
         pause();
@@ -246,6 +296,6 @@ for is=1:nsounds
 end
 
 input('Press Enter to save the data');
-% cd('/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/');
-cd('/auto/fdata/fet/julie/FullVocalizationBank/');
-save vocCutsAnalwPSD_test.mat callAnalData
+ cd('/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/');
+%cd('/auto/fdata/fet/julie/FullVocalizationBank/');
+save vocCutsAnalwFormants.mat callAnalData

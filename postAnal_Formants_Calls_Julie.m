@@ -4,7 +4,7 @@
 % load('/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocCutsAnal.mat');
 % This one includes the PSD, the temporal enveloppe and has the correct
 % calibration for sound level
-load('/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocCutsAnalwPSD.mat');
+load('/Users/frederictheunissen/Documents/Data/Julie/FullVocalizationBank/vocCutsAnalwFormants.mat');
 
 % the file with _test has the fix for the saliency but does not include power and rms - it is called _test
 % just in case it had problem.
@@ -135,7 +135,7 @@ name_grp = unique(vocTypeCuts, 'stable');  % This is the order returned by grpst
 ngroups = length(vocTypes);
 
 
-nAcoust = 22;
+nAcoust = 25;
 % Make a matrix of the Acoustical Parameters
 Acoust = zeros(length(vocTypeCuts), nAcoust);
 Acoust(:,1) = [callAnalData.fund];
@@ -160,6 +160,9 @@ Acoust(:,19) = [callAnalData.kurtosistime];
 Acoust(:,20) = [callAnalData.entropytime];
 Acoust(:,21) = [callAnalData.rms];
 Acoust(:,22) = [callAnalData.maxAmp];
+Acoust(:,23) = [callAnalData.f1];
+Acoust(:,24) = [callAnalData.f2];
+Acoust(:,25) = [callAnalData.f3];
 
 % Tags
 xtag{1} = 'fund';
@@ -184,6 +187,9 @@ xtag{19} = 'kurtosistime';
 xtag{20} = 'entropytime';
 xtag{21} = 'rms';
 xtag{22} = 'maxamp';
+xtag{23} = 'F1';
+xtag{24} = 'F2';
+xtag{25} = 'F3';
 
 % xtag for plotting
 xtagPlot{1} = 'F0';
@@ -208,204 +214,74 @@ xtagPlot{19} = 'Kurt T';
 xtagPlot{20} = 'Ent T';
 xtagPlot{21} = 'RMS';
 xtagPlot{22} = 'Max A';
-
-%% Try an unservised clustering with Saliency and Mean Spectrum
-
-options = statset('Display','final', 'MaxIter', 1000);  % Display final results
-
-X = [Acoust(:,2) Acoust(:,13) Acoust(:,14) Acoust(:,15) Acoust(:,17) Acoust(:,21)];  % Use saliency and mean spectrum for clustering
-
-% Min Max for displaying
-minX1 = min(Acoust(:,2));
-maxX1 = max(Acoust(:,2));
-minX2 = min(Acoust(:,14));
-maxX2 = max(Acoust(:,14));
+xtagPlot{23} = 'F1';
+xtagPlot{24} = 'F2';
+xtagPlot{25} = 'F3';
 
 
-% Plot the data on a color coded scatter plot
+
+%% Make a Histogram of F1, F2, F3.
 figure(1);
-for ig=1:ngroups
-    indGrp =  find( strcmp(vocTypeCuts, nameGrp(ig)) );
-    if ig > 1
-        hold on;
-    end
-    scatter(X(indGrp,1),X(indGrp,3),10, 'MarkerFaceColor', colorplot(ig, :), 'MarkerEdgeColor', colorplot(ig, :));
-    hold off;
-end
-legend(nameGrp);
-xlabel('Saliency');
-ylabel('Spectral Median (Hz)');
+histogram(Acoust(:, 23));
+hold on;
+histogram(Acoust(:, 24));
+histogram(Acoust(:, 25));
+hold off;
 
-
-% Unsupervised clusters
+% F1, F2, F3 together
 figure(2);
-cmap = colormap();
-for icluster=5:10
-    
-    gm = fitgmdist(X,icluster,'Options',options);  % Gaussian mixture model
-    idx = cluster(gm,X);   % Returns the clusters
-    muMeans = mean(gm.mu);
-    
-    % plot each cluster
-    subplot(1, 6, icluster-4);
-    for ic = 1:icluster
-        if ic > 1
-            hold on;
+histogram([Acoust(:, 23) Acoust(:, 24) Acoust(:, 25)]);
+
+% Fix values to put boundaries between formants
+n = size(Acoust,1);
+
+Acoust(Acoust(:, 23) > 8000, 23) = nan;
+Acoust(Acoust(:, 24) > 8000, 24) = nan;
+Acoust(Acoust(:, 25) > 8000, 25) = nan;
+
+for i = 1:n
+    if Acoust(i, 24) > 5000
+        Acoust(i, 25) = Acoust(i, 24);
+        Acoust(i, 24) = nan;
+    end
+    if Acoust(i, 23) > 3000
+        if Acoust(i, 23) > 5000
+            Acoust(i, 25) = Acoust(i, 23);
+        else
+            Acoust(i, 24) = Acoust(i, 23);
         end
-        clusteridx = find(idx == ic);
-        scatter(X(clusteridx(1:20),1),X(clusteridx(1:20),3),10, 'MarkerFaceColor', cmap(fix(64*ic/10),:), 'MarkerEdgeColor', cmap(fix(64*ic/10),:));
-        
-        hold off;
-    end
-    
-    % Add contour lines
-    hold on
-    ezcontour(@(x,y)pdf(gm,[x repmat(muMeans(2),length(x),1) y repmat(muMeans(4), length(x), 1) ...
-        repmat(muMeans(5), length(x), 1) repmat(muMeans(6), length(x), 1) ]),[minX1 maxX1 minX2 maxX2],100);
-    hold off
-    if icluster == 5
-        xlabel('Saliency');
-        ylabel('Spectral Median (Hz)');
-    end
-    title(sprintf('%d AIC = %f', ic, gm.AIC));
-    
+        Acoust(i,23) = nan;
+    end       
 end
 
-%% Try an unservised clustering with Saliency and Mean Spectrum - this time without song
-
-indSong = find( strcmp(vocTypeCuts, 'So') );
-XnoSo = X;
-XnoSo(indSong, :) = [];
-
-
-% Plot the data on a color coded scatter plot
 figure(3);
-for ig=1:ngroups
-    if strcmp(nameGrp(ig), 'So')
-        igSo = ig;
-        continue;
-    end
-    indGrp =  find( strcmp(vocTypeCuts, nameGrp(ig)) );
-    if ig > 1
-        hold on;
-    end
-    scatter(X(indGrp,1),X(indGrp,2),10, 'MarkerFaceColor', colorplot(ig, :), 'MarkerEdgeColor', colorplot(ig, :));
-    hold off;
-end
-nameGrpnoSo = nameGrp;
-nameGrpnoSo(igSo) = [];
-legend(nameGrpnoSo);
-xlabel('Saliency');
-ylabel('Spectral Mean (Hz)');
-    
-gm = fitgmdist(XnoSo,5,'Options',options);  % Gaussian mixture model
-hold on
-ezcontour(@(x,y)pdf(gm,[x y]),[minX1 maxX1 minX2 maxX2],20);
-hold off
+histogram(Acoust(:, 23));
+hold on;
+histogram(Acoust(:, 24));
+histogram(Acoust(:, 25));
+hold off;
 
 
-% Unsupervised clusters
+%% Look at scatter plot of F1, F2 and F1, F3 for subset of data
+
+indSel = find( strcmp(vocTypeCuts, 'DC') | strcmp(vocTypeCuts, 'Wh') | strcmp(vocTypeCuts, 'Te') | strcmp(vocTypeCuts, 'Ne') );
+
+AcoustSel = Acoust(indSel,:);
+vocTypeCutsSel = vocTypeCuts(indSel);
+
+
 figure(4);
-cmap = colormap();
-for icluster=5:10
-    
-    gm = fitgmdist(XnoSo,icluster,'Options',options);  % Gaussian mixture model
-    idx = cluster(gm,XnoSo);   % Returns the clusters
-    
-    % plot each cluster
-    subplot(1, 6, icluster-4);
-    for ic = 1:icluster
-        if ic > 1
-            hold on;
-        end
-        clusteridx = idx == ic;
-        scatter(XnoSo(clusteridx,1),XnoSo(clusteridx,2),10, 'MarkerFaceColor', cmap(fix(64*ic/10),:), 'MarkerEdgeColor', cmap(fix(64*ic/10),:));
-        
-        hold off;
-    end
-    
-    % Add contour lines
-    hold on
-    ezcontour(@(x,y)pdf(gm,[x y]),[minX1 maxX1 minX2 maxX2],20);
-    hold off
-    if icluster == 5
-        xlabel('Saliency');
-        ylabel('Spectral Mean (Hz)');
-    end
-    title(sprintf('%d AIC = %f', ic, gm.AIC));
-    
-end
+subplot(1,3,1);
+gscatter(AcoustSel(:, 23), AcoustSel(:,24), vocTypeCutsSel');
+xlabel(xtagPlot{23});
+ylabel(xtagPlot{24});
 
-%% Try a clustering on the bird averaged data
-% Find number of unique combinations
-vocTypesBirds = unique(strcat(vocTypeCuts', birdNameCuts'), 'stable');
-nvocTypesBirds = length(vocTypesBirds);
-vocTypeCutsMeans = cell(1, nvocTypesBirds);
-birdNameCutsMeans = cell(1, nvocTypesBirds);
-birdSexCutsMeans = cell(1, nvocTypesBirds);
-XMeans = zeros(nvocTypesBirds, 2);
+subplot(1,3,2);
+gscatter(AcoustSel(:, 23), AcoustSel(:,25), vocTypeCutsSel');
+xlabel(xtagPlot{23});
+ylabel(xtagPlot{25});
 
-
-for ic = 1: nvocTypesBirds
-    indTypesBirds = find( strcmp(vocTypesBirds{ic}(1:2), vocTypeCuts') & strcmp(vocTypesBirds{ic}(3:end), birdNameCuts'));
-    vocTypeCutsMeans{ic} = vocTypesBirds{ic}(1:2);
-    birdNameCutsMeans{ic} = vocTypesBirds{ic}(3:end);
-    birdSexCutsMeans{ic} = birdSexCuts{indTypesBirds(1)};
-    if length(indTypesBirds) == 1
-        XMeans(ic, :) = X(indTypesBirds, :);
-    else
-        XMeans(ic, :) = mean(X(indTypesBirds, :));
-    end
-end
-
-figure(5);
-for ig=1:ngroups
-    indGrp =  find( strcmp(vocTypeCutsMeans, nameGrp(ig)) );
-    if ig > 1
-        hold on;
-    end
-    scatter(XMeans(indGrp,1),XMeans(indGrp,2),32, 'MarkerFaceColor', colorplot(ig, :), 'MarkerEdgeColor', colorplot(ig, :));
-    hold off;
-end
-
-gm = fitgmdist(XMeans,6,'Options',options);  % Gaussian mixture model
-hold on
-ezcontour(@(x,y)pdf(gm,[x y]),[minX1 maxX1 minX2 maxX2],50);
-hold off
-legend(nameGrp);
-xlabel('Saliency');
-ylabel('Spectral Mean (Hz)');
-
-% Unsupervised clusters
-figure(6);
-cmap = colormap();
-for icluster=1:5
-    
-    gm = fitgmdist(XMeans,icluster,'Options',options);  % Gaussian mixture model
-    idx = cluster(gm,XMeans);   % Returns the clusters
-    
-    % plot each cluster
-    subplot(1, 5, icluster);
-    for ic = 1:icluster
-        if ic > 1
-            hold on;
-        end
-        clusteridx = idx == ic;
-        scatter(XMeans(clusteridx,1),XMeans(clusteridx,2),10, 'MarkerFaceColor', cmap(fix(64*ic/10),:), 'MarkerEdgeColor', cmap(fix(64*ic/10),:));
-        
-        hold off;
-    end
-    
-    % Add contour lines
-    hold on
-    ezcontour(@(x,y)pdf(gm,[x y]),[minX1 maxX1 minX2 maxX2],20);
-    hold off
-    if icluster == 5
-        xlabel('Saliency');
-        ylabel('Spectral Mean (Hz)');
-    end
-    title(sprintf('%d AIC = %f', ic, gm.AIC));
-    
-end
-
-
+subplot(1,3,3);
+gscatter(AcoustSel(:, 24), AcoustSel(:,25), vocTypeCutsSel');
+xlabel(xtagPlot{24});
+ylabel(xtagPlot{25});

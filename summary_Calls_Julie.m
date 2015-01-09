@@ -64,6 +64,55 @@ plot([0.5 4.5], [100/ngroups 100/ngroups], 'k--');
 
 hold off;
 
+%% Some summary data with merged categories
+
+% PCC per category once again
+pccCat = zeros(1, ngroups);
+for i=1:ngroups
+   pccCat(i) = PCC_Acoust.Conf_RFP(i,i)./sum(PCC_Acoust.Conf_RFP(i,:));
+end
+
+% Now we merge the confusion matrix
+mergeId = [1 6];
+confMatMerge = PCC_Acoust.Conf_RFP;
+
+% merge columns
+for i=1:ngroups
+    confMatMerge(i, mergeId(1)) = confMatMerge(i, mergeId(1)) + confMatMerge(i, mergeId(2));
+end
+% merge rows
+for i=1:ngroups
+    confMatMerge(mergeId(1), i) = confMatMerge(mergeId(1), i) + confMatMerge(mergeId(2), i);
+end
+
+confMatMerge(:,mergeId(2)) = [];
+confMatMerge(mergeId(2), :) = [];
+name_grpMerge = name_grp;
+name_grpMerge(mergeId(2)) = [];
+ngroupsMerge = length(name_grpMerge);
+
+mergeId = [7 8];
+% merge columns
+for i=1:ngroupsMerge
+    confMatMerge(i, mergeId(1)) = confMatMerge(i, mergeId(1)) + confMatMerge(i, mergeId(2));
+end
+% merge rows
+for i=1:ngroupsMerge
+    confMatMerge(mergeId(1), i) = confMatMerge(mergeId(1), i) + confMatMerge(mergeId(2), i);
+end
+
+confMatMerge(:,mergeId(2)) = [];
+confMatMerge(mergeId(2), :) = [];
+name_grpMerge(mergeId(2)) = [];
+ngroupsMerge = length(name_grpMerge);
+
+% PCC per category once again
+pccCatMerge = zeros(1, ngroupsMerge);
+for i=1:ngroupsMerge
+   pccCatMerge(i) = confMatMerge(i,i)./sum(confMatMerge(i,:));
+end
+    
+
 %% Now make a sumary plot per call category
 name_grp_plot = {'Be', 'LT', 'Tu', 'Th', 'Di', 'Ag', 'Wh', 'Ne', 'Te', 'DC', 'So'};
 inb = 4;
