@@ -254,7 +254,7 @@ for ia=1:nAcoust
        
     fprintf('\nLME for %s (no Sex) p=%.2g R2A=%.2f Overall Mean %.3f\n', xtag{ia}, stats.pValue(2), modelV2.Rsquared.Adjusted, mean(acoustMean));
     for i=1:nTypes
-        fprintf(1, '\t%s %.3f (%.3f-%.3f) %.4f\n', nameType{indSorted(i)}, acoustMeanSorted(i), CI(indSorted(i),1), CI(indSorted(i),2), pValMean(indSorted(i)));
+        fprintf(1, '\t%s %.5f (%.5f-%.5f) %.5f\n', nameType{indSorted(i)}, acoustMeanSorted(i), CI(indSorted(i),1), CI(indSorted(i),2), pValMean(indSorted(i)));
     end
     
     indSorted2 = zeros(1, ngroups*2-1);

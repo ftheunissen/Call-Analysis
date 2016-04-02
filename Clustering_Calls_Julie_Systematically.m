@@ -1249,10 +1249,16 @@ ylabel('BIC');
 % Plot the data using 1rst and 2nd PCs
 icluster = 2;
 figure(24);
-subplot(1,2,1)
-ig=4;           % Corresponds to Tets calls
-scatter(scoreAcoustTe(:,1),scoreAcoustTe(:,2),8, 'MarkerFaceColor', colorplot(ig, :), 'MarkerEdgeColor', colorplot(ig, :));
+sexName = {'F', 'M'};
+sexColor = {'m', 'c'};
 
+subplot(1,2,1)
+% ig=4;           % Corresponds to Tets calls
+for ig=1:2
+    indGrp =  find( strcmp(birdSexCutsTe, sexName(ig)) );
+    scatter(scoreAcoustTe(indGrp,1),scoreAcoustTe(indGrp,2),8, 'MarkerFaceColor', sexColor{ig}, 'MarkerEdgeColor', sexColor{ig});
+    hold on;
+end
 
 % Add contour lines
 % hold on
@@ -1290,8 +1296,12 @@ ylabel('PC2');
 axis([-5 5 -5 5]);
 
 subplot(1,2,2)
-ig=4;           % Corresponds to Tet calls
-scatter(scoreAcoustTe(:,1),scoreAcoustTe(:,3),8, 'MarkerFaceColor', colorplot(ig, :), 'MarkerEdgeColor', colorplot(ig, :));
+% ig=4;           % Corresponds to Tet calls
+for ig=1:2
+    indGrp =  find( strcmp(birdSexCutsTe, sexName(ig)) );
+    scatter(scoreAcoustTe(indGrp,1),scoreAcoustTe(indGrp,3),8, 'MarkerFaceColor', sexColor{ig}, 'MarkerEdgeColor', sexColor{ig});
+    hold on;
+end
 
 % Add contour lines
 % hold on
@@ -1357,7 +1367,10 @@ for ic = 1:icluster
 end
 
 bh = bar(countTypePer(:,1:2));   % 8 and 9 are Thucks and Tucks
+
 for ibh=1:2
+    bh(ibh).EdgeColor = sexColor{ibh};
+    bh(ibh).FaceColor = sexColor{ibh};
     text(0.85+(ibh-1)*0.3, countTypePer(1,ibh) + 3, sprintf('%d',countType(1, ibh)));
     text(1.85+(ibh-1)*0.3, countTypePer(2,ibh) + 3, sprintf('%d',countType(2, ibh)));
 end
