@@ -1,5 +1,5 @@
-from lasp.sound import BioSound 
-from lasp.sound import WavFile
+from soundsig.sound import BioSound 
+from soundsig.sound import WavFile
 import os
 import matplotlib.pyplot as plt
 import numpy as np

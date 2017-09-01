@@ -57,8 +57,8 @@ ylabel('Percent Correct Classification');
 legend('RF', 'DFA');
 hold on;
 
-errorbar(mean(get(get(bh(1), 'Children'), 'XData')) , Ybar(:,1),  squeeze(YbarError(:,1,1)), squeeze(YbarError(:,1,2)), '.k' );
-errorbar(mean(get(get(bh(2), 'Children'), 'XData')) , Ybar(:,2),  squeeze(YbarError(:,1,2)), squeeze(YbarError(:,1,2)), '.k' );
+errorbar( get(bh(1), 'XData')-0.15 , Ybar(:,1),  squeeze(YbarError(:,1,1)), squeeze(YbarError(:,1,2)), '.k' );
+errorbar( get(bh(2), 'XData')+0.15 , Ybar(:,2),  squeeze(YbarError(:,1,2)), squeeze(YbarError(:,1,2)), '.k' );
 
 plot([0.5 4.5], [100/ngroups 100/ngroups], 'k--');
 
@@ -200,4 +200,59 @@ xlabel('Call Type');
 
 hold off;
 
+%% Bar plot with DFA only
+
+name_grp_plot = {'Be', 'LT', 'Tu', 'Th', 'Di', 'Ag', 'Wh', 'Ne', 'Te', 'DC', 'So'};
+inb = 1;
+
+colorVals = [ [0 230 255]; [0 95 255]; [255 200 65]; [255 150 40]; [255 105 15];...
+    [255 0 0]; [255 180 255]; [255 100 255]; [140 100 185]; [100 50 200]; [100 100 100] ];
+
+if (length(name_grp_plot) ~= ngroups)
+    fprintf(1, 'Error: missmatch between the length of name_grp_plot and the number of groups\n');
+end
+
+figure(3);
+
+indPlot = zeros(1,ngroups);
+bh = bar(zeros(ngroups,1));
+
+for ig=1:ngroups
+    for ig_ind=1:ngroups
+        if strcmp(name_grp_plot{ig}, name_grp{ig_ind})
+            indPlot(ig_ind) = ig;
+            break;
+        end
+    end
+end
+
+Y1 = 100*PCC_Acoust.group_DFA;
+[Y1sorted, sortind] = sort(Y1);
+   
+hold on;
+for ig=1:ngroups   
+    Y = zeros(ngroups,1); 
+    Y(ig,1) = Y1sorted(ig);
+    bar( Y, 'FaceColor', colorVals(indPlot(sortind(ig)),:)./255);
+end
+
+% The error bars  
+YbarError = zeros(2,ngroups);
+
+Ybar = PCC_Acoust.group_DFA';
+YbarError(1,:) = 100.*(Ybar - PCC_Acoust.group_DFA_CI(:, 1));
+YbarError(2,:) = 100.*(PCC_Acoust.group_DFA_CI(:, 2) - Ybar);
+errorbar( get(bh(1), 'XData') , 100.*Ybar(sortind),  YbarError(1,sortind), YbarError(2,sortind), '.k' );
+
+
+% The chance level
+plot([0 ngroups+1], [100/ngroups 100/ngroups], 'k--');
+
+% Type some text
+set(get(bh(1),'Parent'),'XTickLabel',name_grp(sortind));
+ylabel('Percent Correct Classification');
+xlabel('Call Type');
+
+
+hold off;
 
