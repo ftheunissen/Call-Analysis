@@ -12,11 +12,13 @@ import matplotlib.pyplot as plt
 # import string as str
 from soundsig.discriminate import discriminatePlot
 from scipy.stats.mstats import zscore
+from scipy.stats import binom
 
 #%% Stores 
 inputTable = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/vocParamTable.h5'
 outputTable = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/pairCallerDiscrimResults.h5'
 outputGroupedTable = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/pairCallerDiscrimGroupedResults.h5'
+fileExcelTable = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/pairCallerDiscrimResults.xls'
 figdir = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/Figures Voice'
 
 #%% Read data
@@ -71,12 +73,13 @@ for birdId in birdz:
 cValBirdAll = np.asarray(cValBirdAll)
 
 #%% Perform the pair-wise discrimination for each call type (triple loop)
-ldaScore = []
-ldaScoreSE = []
-qdaScore = []
-qdaScoreSE = []
-rfScore = [] 
-rfScoreSE = []
+ldaYes = []
+qdaYes = []
+rfYes = [] 
+cvCount = []
+ldaProb = []
+qdaProb = []
+rfProb = []
 nClasses = []
 Type = []
 Features = []
@@ -102,9 +105,9 @@ for ctype in callTypes:
                 birdPairInd = (callTypez == ctype) & ((birdz == bird1) | (birdz == bird2))
                                 
                 # Perform pair-wise discrimination
-                lda, ldaSE, qda, qdaSE, rf, rfSE, nC, ldaweights = discriminatePlot(Xallz[birdPairInd], birdz[birdPairInd], cValBirdAll[birdPairInd], titleStr='Caller %s (%s vs %s) 18 AF' % (ctype, bird1, bird2), figdir = figdir, Xcolname = XallNames)
+                ldaY, qdaY, rfY, cvC, ldaP, qdaP, rfP, nC, ldaweights = discriminatePlot(Xallz[birdPairInd], birdz[birdPairInd], cValBirdAll[birdPairInd], titleStr='Caller %s (%s vs %s) 18 AF' % (ctype, bird1, bird2), figdir = figdir, Xcolname = XallNames)
         
-                if lda == -1:
+                if ldaY == -1:
                     continue
                 
                 # Sex labeling
@@ -123,12 +126,13 @@ for ctype in callTypes:
                         sexLabel = 'U'
             
                 # Store data for complete
-                ldaScore.append(lda)
-                ldaScoreSE.append(ldaSE)
-                qdaScore.append(qda)
-                qdaScoreSE.append(qdaSE)
-                rfScore.append(rf) 
-                rfScoreSE.append(rfSE)
+                ldaYes.append(ldaY)
+                ldaProb.append(ldaP)
+                qdaYes.append(qdaY)
+                qdaProb.append(qdaP)
+                rfYes.append(rfY) 
+                rfProb.append(rfP)
+                cvCount.append(cvC)
                 nClasses.append(nC)
                 Features.append('18 AF')
                 Weights.append(abs(ldaweights).mean(axis=0))
@@ -137,14 +141,15 @@ for ctype in callTypes:
                 Type.append('Caller %s' % ctype)
                 
                 # Store data for fundamental only
-                lda, ldaSE, qda, qdaSE, rf, rfSE, nC, ldaweights = discriminatePlot(Xfundz[birdPairInd], birdz[birdPairInd], cValBirdAll[birdPairInd], titleStr='Caller %s (%s vs %s) Fund' % (ctype, bird1, bird2), figdir = figdir, Xcolname = XfundNames)
+                ldaY, qdaY, rfY, cvC, ldaP, qdaP, rfP, nC, ldaweights = discriminatePlot(Xfundz[birdPairInd], birdz[birdPairInd], cValBirdAll[birdPairInd], titleStr='Caller %s (%s vs %s) Fund' % (ctype, bird1, bird2), figdir = figdir, Xcolname = XfundNames)
 
-                ldaScore.append(lda)
-                ldaScoreSE.append(ldaSE)
-                qdaScore.append(qda)
-                qdaScoreSE.append(qdaSE)
-                rfScore.append(rf) 
-                rfScoreSE.append(rfSE)
+                ldaYes.append(ldaY)
+                ldaProb.append(ldaP)
+                qdaYes.append(qdaY)
+                qdaProb.append(qdaP)
+                rfYes.append(rfY) 
+                rfProb.append(rfP)
+                cvCount.append(cvC)
                 nClasses.append(nC)
                 Features.append('Fund AF')
                 Weights.append(abs(ldaweights).mean(axis=0))
@@ -153,14 +158,15 @@ for ctype in callTypes:
                 Type.append('Caller %s' % ctype)
                 
                 # Store data for spectral only
-                lda, ldaSE, qda, qdaSE, rf, rfSE, nC, ldaweights = discriminatePlot(Xspectz[birdPairInd], birdz[birdPairInd], cValBirdAll[birdPairInd], titleStr='Caller %s (%s vs %s) Spect' % (ctype, bird1, bird2), figdir = figdir, Xcolname = XspectNames)
+                ldaY, qdaY, rfY, cvC, ldaP, qdaP, rfP, nC, ldaweights = discriminatePlot(Xspectz[birdPairInd], birdz[birdPairInd], cValBirdAll[birdPairInd], titleStr='Caller %s (%s vs %s) Spect' % (ctype, bird1, bird2), figdir = figdir, Xcolname = XspectNames)
 
-                ldaScore.append(lda)
-                ldaScoreSE.append(ldaSE)
-                qdaScore.append(qda)
-                qdaScoreSE.append(qdaSE)
-                rfScore.append(rf) 
-                rfScoreSE.append(rfSE)
+                ldaYes.append(ldaY)
+                ldaProb.append(ldaP)
+                qdaYes.append(qdaY)
+                qdaProb.append(qdaP)
+                rfYes.append(rfY) 
+                rfProb.append(rfP)
+                cvCount.append(cvC)
                 nClasses.append(nC)
                 Features.append('Spect AF')
                 Weights.append(abs(ldaweights).mean(axis=0))
@@ -169,14 +175,15 @@ for ctype in callTypes:
                 Type.append('Caller %s' % ctype)
                 
                 # Store data for spectral only
-                lda, ldaSE, qda, qdaSE, rf, rfSE, nC, ldaweights = discriminatePlot(Xtempz[birdPairInd], birdz[birdPairInd], cValBirdAll[birdPairInd], titleStr='Caller %s (%s vs %s) Temp' % (ctype, bird1, bird2), figdir = figdir, Xcolname = XtempNames)
+                ldaY, qdaY, rfY, cvC, ldaP, qdaP, rfP, nC, ldaweights = discriminatePlot(Xtempz[birdPairInd], birdz[birdPairInd], cValBirdAll[birdPairInd], titleStr='Caller %s (%s vs %s) Temp' % (ctype, bird1, bird2), figdir = figdir, Xcolname = XtempNames)
 
-                ldaScore.append(lda)
-                ldaScoreSE.append(ldaSE)
-                qdaScore.append(qda)
-                qdaScoreSE.append(qdaSE)
-                rfScore.append(rf) 
-                rfScoreSE.append(rfSE)
+                ldaYes.append(ldaY)
+                ldaProb.append(ldaP)
+                qdaYes.append(qdaY)
+                qdaProb.append(qdaP)
+                rfYes.append(rfY) 
+                rfProb.append(rfP)
+                cvCount.append(cvC)
                 nClasses.append(nC)
                 Features.append('Temp AF')
                 Weights.append(abs(ldaweights).mean(axis=0))
@@ -184,20 +191,20 @@ for ctype in callTypes:
                 BirdPair.append((bird1, bird2))
                 Type.append('Caller %s' % ctype)
                 
-
                         
         
 d = {'Type': np.array(Type),
      'BirdPair': BirdPair, 
      'SexPair': SexPair,
      'Features': np.array(Features), 
-     'LDA' : np.array(ldaScore), 
-     'QDA': np.array(qdaScore),
-     'RF': np.array(rfScore), 
+     'LDAYes' : np.array(ldaYes), 
+     'QDAYes': np.array(qdaYes),
+     'RFYes': np.array(rfYes), 
+     'Count': np.array(cvCount),
      'nClasses' : np.array(nClasses),
-     'LDA_SE' : np.array(ldaScoreSE),
-     'QDA_SE': np.array(qdaScoreSE),
-     'RF_SE': np.array(rfScoreSE),
+     'LDA_P' : np.array(ldaProb),
+     'QDA_P': np.array(qdaProb),
+     'RF_P': np.array(rfProb),
      'Weights': Weights
      }
  
@@ -212,39 +219,65 @@ resultsGroupedSex = resultsDataFrame.groupby(['Type', 'Features', 'SexPair'])
 
 # # Make an Aggregate Pandas Data Frame by hand.  Pandas aggregate did not work well with mixed data.
 numberOfRows = len(resultsGroupedAll.indices) + len(resultsGroupedSex.indices)
-resultsAgg = pandas.DataFrame(index=np.arange(0, numberOfRows), columns=('CallType', 'SexPair', 'NPairs', 'LDA', 'LDA_SE', 'QDA', 'QDA_SE', 'RF', 'RF_SE', 'Weights', 'Weights_SE') )
+resultsAgg = pandas.DataFrame(index=np.arange(0, numberOfRows), 
+            columns=('CallType', 'Features', 'SexPair', 'NPairs', 'TestCount',
+                     'LDA', 'LDA_YES', 'LDA_P', 'QDA', 'QDA_YES', 'QDA_P', 
+                     'RF', 'RF_YES', 'RF_P', 'Weights', 'Weights_SE') )
 
 i = 0
 for key in resultsGroupedAll.indices:
        
     # Extract Call Type from key
-    resultsAgg.iloc[i,0] = key[-2:]   # CallType
+    resultsAgg.iloc[i,0] = key[0][-2:]   # CallType
+    
+    # Extract Features from key
+    resultsAgg.iloc[i,1] = key[1]
     
     # Sex Pair Code
-    resultsAgg.iloc[i,1] = 'A'   # A for all: M, F, X and U
+    resultsAgg.iloc[i,2] = 'A'   # A for all: M, F, X and U
 
     # Number of pair-wise comparisons
     n = len(resultsGroupedAll.indices[key])
-    resultsAgg.iloc[i,2] = n # NPairs
+    resultsAgg.iloc[i,3] = n # NPairs
     
-    # LDA and LDA_SE
-    resultsAgg.iloc[i,3] = resultsDataFrame.LDA.iloc[resultsGroupedAll.indices[key]].mean()
-    resultsAgg.iloc[i,4] = np.sqrt(((resultsDataFrame.LDA_SE.iloc[resultsGroupedAll.indices[key]]**2).mean())/n)
+    # Number of trials used in cross-validation
+    resultsAgg.iloc[i,4] = resultsDataFrame.Count.iloc[resultsGroupedAll.indices[key]].sum()
     
-    # QDA and QDA_SE
-    resultsAgg.iloc[i,5] = resultsDataFrame.QDA.iloc[resultsGroupedAll.indices[key]].mean()
-    resultsAgg.iloc[i,6] = np.sqrt(((resultsDataFrame.QDA_SE.iloc[resultsGroupedAll.indices[key]]**2).mean())/n)
+    # LDA_YES and LDA_P
+    resultsAgg.iloc[i,6] = resultsDataFrame.LDAYes.iloc[resultsGroupedAll.indices[key]].sum() 
+    resultsAgg.iloc[i,5] =  100.0*resultsAgg.iloc[i,6]/resultsAgg.iloc[i,4]
+    ldaP = 0
+    p = 0.5   # Assuming 2 classes here
+    for k in range(resultsAgg.iloc[i,6], resultsAgg.iloc[i,4]+1):
+        ldaP += binom.pmf(k, resultsAgg.iloc[i,4], p)
+    resultsAgg.iloc[i,7] = ldaP
     
+    # QDA_YES and QDA_P
+    resultsAgg.iloc[i,9] = resultsDataFrame.QDAYes.iloc[resultsGroupedAll.indices[key]].sum() 
+    resultsAgg.iloc[i,8] =  100.0*resultsAgg.iloc[i,9]/resultsAgg.iloc[i,4]
+    qdaP = 0
+    p = 0.5   # Assuming 2 classes here
+    for k in range(resultsAgg.iloc[i,9], resultsAgg.iloc[i,4]+1):
+        qdaP += binom.pmf(k, resultsAgg.iloc[i,4], p)
+    resultsAgg.iloc[i,10] = qdaP
+       
     # RF and RF_SE
-    resultsAgg.iloc[i,7] = resultsDataFrame.RF.iloc[resultsGroupedAll.indices[key]].mean()
-    resultsAgg.iloc[i,8] = np.sqrt(((resultsDataFrame.RF_SE.iloc[resultsGroupedAll.indices[key]]**2).mean())/n)
-   
+    resultsAgg.iloc[i,12] = resultsDataFrame.RFYes.iloc[resultsGroupedAll.indices[key]].sum()
+    resultsAgg.iloc[i,11] =  100.0*resultsAgg.iloc[i,12]/resultsAgg.iloc[i,4]
+    rfP = 0
+    p = 0.5   # Assuming 2 classes here
+    for k in range(resultsAgg.iloc[i,12], resultsAgg.iloc[i,4]+1):
+        rfP += binom.pmf(k, resultsAgg.iloc[i,4], p)
+    resultsAgg.iloc[i,13] = rfP
+                   
     # Average Weights and SE
-    WeightsAll = resultsDataFrame.Weights.iloc[resultsGroupedAll.indices[key]]
-    WeightsMean = WeightsAll.mean(axis = 0)
-    WeightsSE = np.sqrt((np.asarray(WeightsAll).var(axis = 0, ddof=1))/n)
-    resultsAgg.iloc[i,9] = WeightsMean
-    resultsAgg.iloc[i,10] = WeightsSE               
+    WeightsAll = np.vstack(resultsDataFrame.Weights.iloc[resultsGroupedAll.indices[key]])
+    countAll = np.array(resultsDataFrame.Count.iloc[resultsGroupedAll.indices[key]], ndmin=2 )
+    WeightsMean = np.dot(countAll, WeightsAll)/np.sum(countAll)
+    
+    WeightsSE = np.sqrt(np.dot(countAll, (WeightsAll-WeightsMean)**2)/(np.sum(countAll)*n))
+    resultsAgg.iloc[i,14] = WeightsMean
+    resultsAgg.iloc[i,15] = WeightsSE               
                    
     i += 1
     
@@ -253,43 +286,74 @@ for key in resultsGroupedSex.indices:
     # Extract Call Type from key
     resultsAgg.iloc[i,0] = key[0][-2:]   # CallType
     
+    # Extract Features from key
+    resultsAgg.iloc[i,1] = key[1]
+    
     # Sex Pair Code
-    resultsAgg.iloc[i,1] = key[1]   # A M, F, X or U
+    resultsAgg.iloc[i,2] = key[2]   # A M, F, X or U
 
     # Number of pair-wise comparisons
     n = len(resultsGroupedSex.indices[key])
-    resultsAgg.iloc[i,2] = n # NPairs
+    resultsAgg.iloc[i,3] = n # NPairs
     
-    # LDA and LDA_SE
-    resultsAgg.iloc[i,3] = resultsDataFrame.LDA.iloc[resultsGroupedSex.indices[key]].mean()
-    resultsAgg.iloc[i,4] = np.sqrt(((resultsDataFrame.LDA_SE.iloc[resultsGroupedSex.indices[key]]**2).mean())/n)
+    # Number of trials used in cross-validation
+    resultsAgg.iloc[i,4] = resultsDataFrame.Count.iloc[resultsGroupedSex.indices[key]].sum()
     
-    # QDA and QDA_SE
-    resultsAgg.iloc[i,5] = resultsDataFrame.QDA.iloc[resultsGroupedSex.indices[key]].mean()
-    resultsAgg.iloc[i,6] = np.sqrt(((resultsDataFrame.QDA_SE.iloc[resultsGroupedSex.indices[key]]**2).mean())/n)
+    # LDA_YES and LDA_P
+    resultsAgg.iloc[i,6] = resultsDataFrame.LDAYes.iloc[resultsGroupedSex.indices[key]].sum() 
+    resultsAgg.iloc[i,5] =  100.0*resultsAgg.iloc[i,6]/resultsAgg.iloc[i,4]
+    ldaP = 0
+    p = 0.5   # Assuming 2 classes here
+    for k in range(resultsAgg.iloc[i,6], resultsAgg.iloc[i,4]+1):
+        ldaP += binom.pmf(k, resultsAgg.iloc[i,4], p)
+    resultsAgg.iloc[i,7] = ldaP
     
+    # QDA_YES and QDA_P
+    resultsAgg.iloc[i,9] = resultsDataFrame.QDAYes.iloc[resultsGroupedSex.indices[key]].sum() 
+    resultsAgg.iloc[i,8] =  100.0*resultsAgg.iloc[i,9]/resultsAgg.iloc[i,4]
+    qdaP = 0
+    p = 0.5   # Assuming 2 classes here
+    for k in range(resultsAgg.iloc[i,9], resultsAgg.iloc[i,4]+1):
+        qdaP += binom.pmf(k, resultsAgg.iloc[i,4], p)
+    resultsAgg.iloc[i,10] = qdaP
+       
     # RF and RF_SE
-    resultsAgg.iloc[i,7] = resultsDataFrame.RF.iloc[resultsGroupedSex.indices[key]].mean()
-    resultsAgg.iloc[i,8] = np.sqrt(((resultsDataFrame.RF_SE.iloc[resultsGroupedSex.indices[key]]**2).mean())/n)
-   
+    resultsAgg.iloc[i,12] = resultsDataFrame.RFYes.iloc[resultsGroupedSex.indices[key]].sum()
+    resultsAgg.iloc[i,11] =  100.0*resultsAgg.iloc[i,12]/resultsAgg.iloc[i,4]
+    rfP = 0
+    p = 0.5   # Assuming 2 classes here
+    for k in range(resultsAgg.iloc[i,12], resultsAgg.iloc[i,4]+1):
+        rfP += binom.pmf(k, resultsAgg.iloc[i,4], p)
+    resultsAgg.iloc[i,13] = rfP
+                   
     # Average Weights and SE
-    WeightsAll = resultsDataFrame.Weights.iloc[resultsGroupedSex.indices[key]]
-    WeightsMean = WeightsAll.mean(axis = 0)
-    WeightsSE = np.sqrt((np.asarray(WeightsAll).var(axis = 0, ddof=1))/n)
-    resultsAgg.iloc[i,9] = WeightsMean
-    resultsAgg.iloc[i,10] = WeightsSE               
+    WeightsAll = np.vstack(resultsDataFrame.Weights.iloc[resultsGroupedSex.indices[key]])
+    countAll = np.array(resultsDataFrame.Count.iloc[resultsGroupedSex.indices[key]], ndmin=2 )
+    WeightsMean = np.dot(countAll, WeightsAll)/np.sum(countAll)
+    
+    WeightsSE = np.sqrt(np.dot(countAll, (WeightsAll-WeightsMean)**2)/(np.sum(countAll)*n))
+    resultsAgg.iloc[i,14] = WeightsMean
+    resultsAgg.iloc[i,15] = WeightsSE                 
                    
     i += 1
 
 # Print average performances of Classifiers
+print('Weighted Average')
+print('LDA:', 100.0*resultsAgg.LDA_YES.sum()/resultsAgg.TestCount.sum(), ' QDA:', 100.0*resultsAgg.QDA_YES.sum()/resultsAgg.TestCount.sum(), ' RF:', 100.0*resultsAgg.RF_YES.sum()/resultsAgg.TestCount.sum() )
+
+print('Average (per call - across all')
 print('LDA:', resultsAgg.LDA.mean(), ' QDA:', resultsAgg.QDA.mean(), ' RF:', resultsAgg.RF.mean() )
 
-# Save Data
+#%% Save Data
 resultsDataFrame.to_hdf(outputTable, 'resultsDataFrame', mode='w')
 resultsAgg.to_hdf(outputGroupedTable, 'resultsAgg', mode='w')
 
+# Write the results to Excel without the Weights
+resultsDataFrame.to_excel(fileExcelTable, columns = resultsDataFrame.columns[0:11])
+
+#%% Make a plot
 # A for both male and females.
-indCallerA = [index for index, row in resultsAgg.iterrows() if row.SexPair == "A"]
+indCallerA = [index for index, row in resultsAgg.iterrows() if ( (row.SexPair == "A") and (row.Features == '18 AF'))]
 resultsperCallTypeA = resultsAgg.loc[indCallerA]
 # Sort data by descending performance for LDA discrimination
 resultsperCallTypeA = resultsperCallTypeA.sort_values(by='LDA', ascending = False) 
@@ -302,7 +366,7 @@ xvals = -1
 oldlen = 0
 for lbl in sortedCallTypes:
     xvals += 1
-    indCallerM += [index for index, row in resultsAgg.iterrows() if ( (row.SexPair == 'M') and (row.CallType == lbl) ) ]
+    indCallerM += [index for index, row in resultsAgg.iterrows() if ( (row.SexPair == 'M') and (row.CallType == lbl) and (row.Features == '18 AF')) ]
     newlen = len(indCallerM)
     if (newlen != oldlen):   # This code is for the x axis for the plot to skip if there is no data.
         xvalsM += [xvals]
@@ -316,7 +380,7 @@ xvals = -1
 oldlen = 0
 for lbl in sortedCallTypes:
     xvals += 1
-    indCallerF += [index for index, row in resultsAgg.iterrows() if ( (row.SexPair == 'F') and (row.CallType == lbl) ) ]
+    indCallerF += [index for index, row in resultsAgg.iterrows() if ( (row.SexPair == 'F') and (row.CallType == lbl) and (row.Features == '18 AF') ) ]
     newlen = len(indCallerF)
     if (newlen != oldlen):
         xvalsF += [xvals]
@@ -330,7 +394,7 @@ xvals = -1
 oldlen = 0
 for lbl in sortedCallTypes:
     xvals += 1
-    indCallerX += [index for index, row in resultsAgg.iterrows() if ( (row.SexPair == 'X') and (row.CallType == lbl) ) ]
+    indCallerX += [index for index, row in resultsAgg.iterrows() if ( (row.SexPair == 'X') and (row.CallType == lbl) and (row.Features == '18 AF')) ]
     newlen = len(indCallerX)
     if (newlen != oldlen):
         xvalsX += [xvals]
@@ -344,7 +408,7 @@ xvals = -1
 oldlen = 0
 for lbl in sortedCallTypes:
     xvals += 1
-    indCallerU += [index for index, row in resultsAgg.iterrows() if ( (row.SexPair == 'U') and (row.CallType == lbl) ) ]
+    indCallerU += [index for index, row in resultsAgg.iterrows() if ( (row.SexPair == 'U') and (row.CallType == lbl) and (row.Features == '18 AF')) ]
     newlen = len(indCallerU)
     if (newlen != oldlen):
         xvalsU += [xvals]
@@ -354,11 +418,14 @@ resultsperCallTypeU = resultsAgg.loc[indCallerU]
 plt.figure()
 xvals = np.arange(len(indCallerA))
 width = 0.75          # the width of the bars
-b1=plt.bar(xvals*5, resultsperCallTypeA.LDA, width, color='k', yerr=np.array(resultsperCallTypeA.LDA_SE))
-b2=plt.bar(np.array(xvalsM)*5 + width, resultsperCallTypeM.LDA, width, color='b', yerr=np.array(resultsperCallTypeM.LDA_SE))                      
-b3=plt.bar(np.array(xvalsF)*5 + 2*width, resultsperCallTypeF.LDA, width, color='r', yerr=np.array(resultsperCallTypeF.LDA_SE)) 
-b4=plt.bar(np.array(xvalsX)*5 + 3*width, resultsperCallTypeX.LDA, width, color='g', yerr=np.array(resultsperCallTypeX.LDA_SE)) 
-b5=plt.bar(np.array(xvalsU)*5 + 4*width, resultsperCallTypeU.LDA, width, color='y', yerr=np.array(resultsperCallTypeU.LDA_SE))                      
+# b1=plt.bar(xvals*5, resultsperCallTypeA.LDA, width, color='k', yerr=np.array(resultsperCallTypeA.LDA_SE))
+
+b1=plt.bar(xvals*5, resultsperCallTypeA.LDA, width, color='k', yerr=10.0*np.ones(len(xvals)))
+
+b2=plt.bar(np.array(xvalsM)*5 + width, resultsperCallTypeM.LDA, width, color='b', yerr=10.0*np.ones(len(xvalsM)))                      
+b3=plt.bar(np.array(xvalsF)*5 + 2*width, resultsperCallTypeF.LDA, width, color='r', yerr=10.0*np.ones(len(xvalsF))) 
+b4=plt.bar(np.array(xvalsX)*5 + 3*width, resultsperCallTypeX.LDA, width, color='g', yerr=10.0*np.ones(len(xvalsX))) 
+b5=plt.bar(np.array(xvalsU)*5 + 4*width, resultsperCallTypeU.LDA, width, color='y', yerr=10.0*np.ones(len(xvalsU)))                      
 
 plt.xticks(5*xvals + width*5/2., sortedCallTypes)
 plt.legend((b1[0], b2[0], b3[0], b4[0], b5[0]), ('All', 'M', 'F', 'X', 'U'))
