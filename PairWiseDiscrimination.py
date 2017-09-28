@@ -94,9 +94,9 @@ for ctype in callTypes:
     nsamples = np.size(goodInd)
     birds = np.unique(birdz[goodInd])
     nbirds = birds.size
-    print 'Performing Voice Discrimination for %s with %d samples from %d birds' % (ctype, nsamples, nbirds)
+    print ('Performing Voice Discrimination for %s with %d samples from %d birds' % (ctype, nsamples, nbirds))
     if (nbirds < 2) :
-        print 'Warning: Insuficient number of birds to perform discrimination'
+        print ('Warning: Insuficient number of birds to perform discrimination')
     else:
         for i1 in range(nbirds):
             bird1 = birds[i1]
