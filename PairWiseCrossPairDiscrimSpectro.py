@@ -16,17 +16,17 @@ from scipy.stats import binom
 from statsmodels.stats.proportion import proportion_confint
 
 #%% Stores 
-inputTable = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/vocParamTable.h5'
-outputTable = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/pairCallerCrossPairDiscrimResults.h5'
-outputGroupedTable = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/pairCallerCrossPairDiscrimGroupedResults.h5'
-fileExcelTable = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/pairCallerCrossPairDiscrimResults.xls'
+inputTable = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/vocSpectroTable.h5'
+outputTable = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/pairCallerCrossPairDiscrimSpectroResults.h5'
+outputGroupedTable = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/pairCallerCrossPairDiscrimSpectroGroupedResults.h5'
+fileExcelTable = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/pairCallerCrossPairDiscrimSpectroResults.xls'
 figdir = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/Figures Voice'
 
 #%% Read data
 vocSelTable = pandas.read_hdf(inputTable)
 
 #%% List of call types and of birnames
-callTypes = np.unique(vocSelTable['calltype'])
+callTypes = np.unique(vocSelTable['Calltype'])
 birdNames = np.unique(vocSelTable['Bird'])
 
 # Color code for bird ID
@@ -39,33 +39,20 @@ y = np.array(vocSelTable['Bird'])
 
 # Divide features into Fundamental, Spectral and Temporal
 
-XfundNames = np.hstack(('sal', 'fund','maxfund','minfund','cvfund'))
-Xfund = [vocSelTable.loc[:,col] for col in XfundNames ]
-Xfund = np.stack(Xfund, axis=1)
-
-XspectNames = np.hstack(('meanS', 'stdS', 'skewS', 'kurtS', 'entS', 'q1', 'q2', 'q3'))
-Xspect = [vocSelTable.loc[:,col] for col in XspectNames ]
-Xspect = np.stack(Xspect, axis=1)
-
-XtempNames = np.hstack(('meanT', 'stdT', 'skewT', 'kurtT', 'entT'))
-Xtemp = [vocSelTable.loc[:,col] for col in XtempNames ]
-Xtemp = np.stack(Xtemp, axis=1)
-
+# Feature space is the spectrogram
    
-Xall = np.hstack((Xfund, Xspect, Xtemp))
-XallNames = np.hstack((XfundNames, XspectNames, XtempNames))
+Xall = np.stack(vocSelTable.loc[: ,'Spectro'], axis=0)
+XallNames = 'Spectro'
 
 # Z score all data that is not nan and make corresponding arrays for bird id and call type
 nonanInd = (np.sum(np.isnan(Xall), axis = 1) == 0)
 
-Xfundz = zscore(Xfund[nonanInd], axis=0)
-Xspectz = zscore(Xspect[nonanInd], axis=0)
-Xtempz = zscore(Xtemp[nonanInd], axis=0)
 Xallz = zscore(Xall[nonanInd], axis=0)
+
 
 birdz = y[nonanInd]
 birdSex = np.array(vocSelTable['Sex'])[nonanInd]
-callTypez = np.asarray(vocSelTable['calltype'])[nonanInd]
+callTypez = np.asarray(vocSelTable['Calltype'])[nonanInd]
 
 # Generate a unique randome color for each bird
 cValBirdAll = []
@@ -190,10 +177,7 @@ BirdPair = []
 for gp in goodPairs:    
     birdPairInd = (birdz == gp['bird1']) | (birdz == gp['bird2'])
                 
-    # These are data for this bird pair. 
-    XfundzPair = Xfundz[birdPairInd]
-    XspectzPair = Xspectz[birdPairInd]
-    XtempzPair = Xtempz[birdPairInd] 
+    # These are data for this bird pair.  
     XallzPair = Xallz[birdPairInd]
 
     birdzPair = birdz[birdPairInd]  
@@ -201,10 +185,7 @@ for gp in goodPairs:
     callTypezPair = callTypez[birdPairInd]
     callTypeUnique = np.unique(callTypezPair)
     
-    featureList = [{'name' : '18 AF', 'X' : XallzPair}, 
-                   {'name' : 'Fund AF', 'X' : XfundzPair},
-                   {'name' : 'Spect AF', 'X' : XspectzPair},
-                   {'name' : 'Temp AF', 'X' : XtempzPair} ]
+    featureList = [{'name' : 'Spectro', 'X' : XallzPair}] 
 
     for ctypeTest in callTypeUnique:
         ctypeIndBird1 = (callTypezPair == ctypeTest) & (birdzPair == gp['bird1'])
@@ -218,8 +199,8 @@ for gp in goodPairs:
         # First Perform pair-wise discrimination for within call
         for fl in featureList:               
             ldaY, qdaY, rfY, cvC, ldaP, qdaP, rfP, nC, ldaweights = discriminatePlot(fl['X'][testInd], birdzPair[testInd], cValBirdPair[testInd], 
-                                                                                 titleStr='Caller %s (%s vs %s) 18 AF' % (ctypeTest, gp['bird1'], gp['bird2']), 
-                                                                                 figdir = figdir, Xcolname = XallNames)
+                                                                                 titleStr='Caller %s (%s vs %s) Spectro' % (ctypeTest, gp['bird1'], gp['bird2']), 
+                                                                                 figdir = figdir)
        
             if ldaY == -1:
                 print ('Error: Failure in discriminate Plot')
@@ -262,8 +243,8 @@ for gp in goodPairs:
                         
                 # Perform pair-wise discrimination across calls
                 ldaY, qdaY, rfY, cvC, ldaP, qdaP, rfP, nC, ldaweights = discriminatePlot(fl['X'][allInd], birdzPair[allInd], cValBirdPair[allInd], 
-                                                                                 titleStr='Voice %s (%s vs %s) 18 AF' % (ctypeTrain, gp['bird1'], gp['bird2']), 
-                                                                                 figdir = figdir, Xcolname = XallNames, testInd = testIndTF)
+                                                                                 titleStr='Voice %s (%s vs %s) Spectro' % (ctypeTrain, gp['bird1'], gp['bird2']), 
+                                                                                 figdir = figdir, testInd = testIndTF)
                 if ldaY == -1:
                     print ('Error: Failure in discriminate Plot')
                     continue
@@ -539,8 +520,8 @@ resultsAgg = pandas.read_hdf(outputGroupedTable)
 alpha = 0.05
 
 # Select rows for all sex combinations and all Features and adult calls only
-indMatAllAdult = [index for index, row in resultsAgg.iterrows() if ( (row.SexPair == "A") and (row.Features == '18 AF') and ( (row.CallTrain != 'LT' ) and (row.CallTrain != 'Be')) ) ]
-indMatDiagAdult = [index for index, row in resultsAgg.iterrows() if ( (row.SexPair == "A") and (row.Features == '18 AF') and (row.CallTrain == row.CallTest) and ( (row.CallTrain != 'LT' ) and (row.CallTrain != 'Be')) )]
+indMatAllAdult = [index for index, row in resultsAgg.iterrows() if ( (row.SexPair == "A") and (row.Features == 'Spectro') and ( (row.CallTrain != 'LT' ) and (row.CallTrain != 'Be')) ) ]
+indMatDiagAdult = [index for index, row in resultsAgg.iterrows() if ( (row.SexPair == "A") and (row.Features == 'Spectro') and (row.CallTrain == row.CallTest) and ( (row.CallTrain != 'LT' ) and (row.CallTrain != 'Be')) )]
 
 resultsAllAdult = resultsAgg.loc[indMatAllAdult]
 resultsDiagAdult = resultsAgg.loc[indMatDiagAdult]

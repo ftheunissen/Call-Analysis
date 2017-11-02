@@ -1,17 +1,41 @@
 # Calculates mixed effect glm on Voice.
+# This is the version that uses all 18 AF and does the analysis for sex of caller.
 library(lme4)
 library(effects)
 library(car)
 
-# Read Excel data file.
+# Read Excel data file 
 fileCSVTable = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/pairCallerDiscrimResults.csv'
 fileModelCoef = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/pairCallerDiscrimGLMModel.csv'
+
 fileModelSexCoef = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/pairCallerSexDiscrimGLMModel.csv'
 fileModelJuvSexCoef = '/Users/frederictheunissen/Documents/Data/Julie/Acoustical Analysis/pairCallerJuvSexDiscrimGLMModel.csv'
 
 vocSelTable <- read.csv(fileCSVTable, header = TRUE)
 
-ndata <- sum(vocSelTable$Features == '18 AF')
+sel <- (vocSelTable$Features == '18 AF') 
+ndata <- sum(sel)
+unique.type <- unique(vocSelTable$Type[sel])
+
+# Perform binomial stats
+for (type.call in unique.type) {
+     # number of significant pairs
+     sel.call <-  sel & (vocSelTable$Type == type.call)
+     n.call <-  sum(sel.call)
+     n.yes <-  sum(vocSelTable$LDA_P[sel.call] < 0.05)
+     htest <- binom.test(n.yes, n.call, p = 0.05, alternative =  "greater",
+           conf.level = 0.95)
+     print(sprintf('%s: sig pairs %d/%d p(Null=0.05) = %.3g', type.call, n.yes, n.call, htest$p.value))
+}
+
+# Some fun stats about DC.
+featureAF = '18 AF'
+selDC = (vocSelTable$Features == featureAF) & (vocSelTable$Type == 'Caller DC')
+sel100PCC = vocSelTable$LDAYes[selDC] == vocSelTable$Count[selDC]
+print(sprintf('Number of Bird Pairs with 100%% Disc for DC %d/%d', sum(sel100PCC), sum(selDC)))
+vocTableDC = vocSelTable[selDC,]
+print(sprintf('Number of tested calls correctly classified %d', sum(vocTableDC$Count[sel100PCC]) ))
+print(sprintf('Average classication %.2f', sum(vocTableDC$LDAYes)/sum(vocTableDC$Count) ))
 
 # This number must correspond to the number of cross validations
 
