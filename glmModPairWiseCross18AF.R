@@ -36,6 +36,12 @@ for (ic in 1:length(classifier)) {
   formula.all <- sprintf('cbind(%sYes, Count-%sYes) ~ Call*TestType + (1| BirdPair)',  classifier[[ic]], classifier[[ic]])
   model.CallerVoice <- glmer( as.formula(formula.all) , data=vocSelTable, subset = (Features == '18 AF'), family= binomial)
   (summary(model.CallerVoice))
+  
+  formula.TestType <- sprintf('cbind(%sYes, Count-%sYes) ~ TestType + (1| BirdPair)',  classifier[[ic]], classifier[[ic]])
+  model.TestType <- glmer( as.formula(formula.TestType) , data=vocSelTable, subset = (Features == '18 AF'), family= binomial)
+  formula.1 <- sprintf('cbind(%sYes, Count-%sYes) ~ 1 + (1| BirdPair)',  classifier[[ic]], classifier[[ic]])
+  model.Null <- glmer( as.formula(formula.1) , data=vocSelTable, subset = (Features == '18 AF'), family= binomial)
+  (anova(model.Null, model.TestType, test = 'Chisq'))
 
   model.CallerVoice.Effect <- effect("Call:TestType", model.CallerVoice, se=TRUE)
   sum.CallerVoice.Effect <- summary(model.CallerVoice.Effect)
