@@ -14,3 +14,8 @@ model.glm <- glm(cbind(Yes, Count-Yes) ~ Feature, data=dataLDACall, family=binom
 model.null <- glm(cbind(Yes, Count-Yes) ~ 1, data=dataLDACall, family=binomial) 
 summary(model.glm)
 anova(model.null, model.glm, test='Chisq')
+
+effect.model <- Effect('Feature', model.glm)
+effect.model.sum <- summary(effect.model)
+(effect.model.sum$effect)
+(effect.model.sum$upper - effect.model.sum$lower)/4

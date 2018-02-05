@@ -21,6 +21,9 @@ features = as.list(c('18 AF', 'Spect AF', 'Temp AF', 'Fund AF'))
 model.Features <- glmer( cbind(LDAYes, Count-LDAYes) ~ Type + Features + (1| BirdPair) , data=vocSelTable, subset = Features != '18 AF', family= binomial)
 model.NoFeatures <- glmer( cbind(LDAYes, Count-LDAYes) ~ Type + (1| BirdPair) , data=vocSelTable, subset = Features != '18 AF', family= binomial)
 anova(model.Features, model.NoFeatures, test = 'Chisq')
+features.Effect <- Effect('Features', model.Features)
+features.Effect.Sum <- summary(features.Effect)
+(features.Effect.Sum$upper - features.Effect.Sum$lower)/4
 
 for (ifeat in 1:length(features)) {
   ndata <- sum(vocSelTable$Features == features[[ifeat]])

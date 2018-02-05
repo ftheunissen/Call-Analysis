@@ -35,6 +35,8 @@ for (ifeat in 1:length(features)) {
 
   model.CallerVoice <- glmer( cbind(RFYes, Count-RFYes) ~ Call*TestType + (1| BirdPair) , data=vocSelTable, subset = (Features == features[[ifeat]]), family= binomial)
   (summary(model.CallerVoice))
+  model.Null <- glmer( cbind(RFYes, Count-RFYes) ~ Call + (1| BirdPair) , data=vocSelTable, subset = (Features == features[[ifeat]]), family= binomial)
+  anova(model.Null, model.CallerVoice, test = 'Chisq')
 
   model.CallerVoice.Effect <- effect("Call:TestType", model.CallerVoice, se=TRUE)
   sum.CallerVoice.Effect <- summary(model.CallerVoice.Effect)
